@@ -3,7 +3,7 @@ from tqdm import tqdm
 import os
 import pycuda.driver as drv
 
-problem = [32]
+# problem = [32]
 problem = [31, 33, 35, 36, 37]
 # problem = [1,3,4]
 # problem.reverse()
@@ -41,7 +41,5 @@ for j in range(len(problem)):
               + str(pos_dim) +'posdim_'
               + alpha2[0] + '.' + alpha2[1] +'alpha_'
               + GPU +'.pkl')
-
-# main(0, num)
 
 
