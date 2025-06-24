@@ -62,7 +62,7 @@ else:
 Path("result").mkdir(parents=False, exist_ok=True)
 
 for func_n in [int(problem)]:
-    func_name = optimizationMap[func_n]
+    func_name = optimisationMap[func_n]
     # num_runs = 30
     num_runs = 1
     if (11 <= func_n <= 16
@@ -119,9 +119,9 @@ for func_n in [int(problem)]:
 
     config = f"E{global_best_attribution_type + 1}V{Xr_pool_type + 1}D{DE_mutation_type + 1}C{crowd_distance_type+1}"
 
-    print(f"Running E{global_best_attribution_type+1}V{Xr_pool_type+1}D{DE_mutation_type+1}C{crowd_distance_type+1} on {optimizationMap[func_n]}")
+    print(f"Running E{global_best_attribution_type+1}V{Xr_pool_type+1}D{DE_mutation_type+1}C{crowd_distance_type+1} on {optimisationMap[func_n]}")
 
-    print('problem', problem, optimizationMap[problem], 'max_iters', max_num_iters, 'alpha', alpha)
+    print('problem', problem, optimisationMap[problem], 'max_iters', max_num_iters, 'alpha', alpha)
 
     for i in tqdm(range(num_runs)):
         params = MESH_Params(objectives_dim, otimizations_type, max_iterations,
@@ -133,11 +133,14 @@ for func_n in [int(problem)]:
                              func_n=func_n,
                              gpu=True)
 
+        start = dt.now()
+
         # MCDEEPSO = MESH(params, func)
         MCDEEPSO = MESH(params, func, max_num_iters=max_num_iters, alpha=alpha)
-        MCDEEPSO.log_memory = f"result/{config}C1_{i}-{optimizationMap[func_n]}-{objectives_dim}obj-"
+        MCDEEPSO.log_memory = f"result/{config}C1_{i}-{optimisationMap[func_n]}-{objectives_dim}obj-"
 
         cpu, gpu = MCDEEPSO.run(func_name,False, False)
+        gpu2 = (dt.now() - start).total_seconds()
 
         f = open('results.pkl', 'rb')
         results = pickle.load(f)
@@ -146,6 +149,7 @@ for func_n in [int(problem)]:
         f = open('results.pkl', 'wb')
         results['cpu'].append(sum(cpu))
         results['gpu'].append(sum(gpu))
+        results['gpu2'].append(gpu2)
         pickle.dump(results, f)
         f.close()
 

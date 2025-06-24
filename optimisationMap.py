@@ -1,4 +1,4 @@
-optimizationMap = {
+optimisationMap = {
     1: 'DTLZ1',
     2: 'DTLZ2',
     3: 'DTLZ3',
