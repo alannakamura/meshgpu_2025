@@ -10,7 +10,7 @@ from pymoo.optimize import minimize
 
 
 def main(numL, numC):
-    # name = 'zdt1'
+    name = 'zdt1'
     # name = 'zdt2'
     # name = 'zdt3'
     # name = 'zdt6'
@@ -22,64 +22,23 @@ def main(numL, numC):
     # name = 'mw5'
     # name = 'mw6'
     # name = 'mw7'
-    # problem = get_problem(name)
+    problem = get_problem(name)
 
-    name = 'wfg1'
-    problem = get_problem(name, n_var = 6, n_obj =2)
+    # name = 'wfg1'
+    # problem = get_problem(name, n_var = 6, n_obj =2)
 
     # name = 'zdt6'
     # problem = get_problem(name, normalize=False)
 
     # problem = get_problem("mw1", n_var =10, n_obj=2)
+
+
+
     pf_a = problem.pareto_front()
     # pf_a = problem.pareto_front(use_cache=False)
 
     # f = open('results.pkl', 'rb')
-    # f = open('testes/gecco/201124/results_11_300sim_30iter_128pop_-1.0alpha_4060.pkl', 'rb')
-    # f = open('testes/gecco/201124/results_12_300sim_30iter_128pop_-1.0alpha_4060.pkl', 'rb')
-    # f = open('testes/gecco/201124/results_13_300sim_30iter_128pop_-1.0alpha_4060.pkl', 'rb')
-    # f = open('testes/gecco/101224/results_14_300sim_100iter_128pop_-1.0alpha_4060.pkl', 'rb')
-    # f = open('testes/gecco/201124/results_16_300sim_30iter_128pop_-1.0alpha_4060.pkl', 'rb')
-
-    # f = open('testes/gecco/101224/results_31_100sim_30iter_128pop_-1.0alpha_4060.pkl', 'rb')
-    # f = open('testes/gecco/101224/results_33_100sim_30iter_128pop_-1.0alpha_4060.pkl', 'rb')
-    # f = open('testes/gecco/101224/results_35_100sim_30iter_128pop_-1.0alpha_4060.pkl', 'rb')
-    # f = open('testes/gecco/101224/results_37_100sim_30iter_128pop_-1.0alpha_4060.pkl', 'rb')
-
-    # zdts 64 bits - hiper continuaram a mesma coisa(zdt4 melhorou) e o tempo aumentou um pouco
-    # f = open('testes/gecco/171224/results_11_300sim_30iter_128pop_1.0alpha_4060.pkl', 'rb')
-    # f = open('testes/gecco/171224/results_12_300sim_30iter_128pop_1.0alpha_4060.pkl', 'rb')
-    # f = open('testes/gecco/171224/results_13_300sim_30iter_128pop_1.0alpha_4060.pkl', 'rb')
-    # f = open('testes/gecco/171224/results_14_100sim_100iter_128pop_1.0alpha_4060.pkl', 'rb')
-    # f = open('testes/gecco/171224/results_16_300sim_30iter_128pop_1.0alpha_4060.pkl', 'rb')
-
-    # mw1 - abaixou o tempo e hiper ficou diferente na quarta casa decimal
-    # f = open('testes/gecco/171224/results_31_100sim_30iter_128pop_1.0alpha_4060.pkl', 'rb')
-    # ganhou do mw1 da cpu
-    # f = open('testes/gecco/171224/results_31_100sim_40iter_128pop_1.0alpha_4060.pkl', 'rb')
-    # baixou tempo e ganhou da cpu
-    # f = open('testes/gecco/171224/results_33_100sim_30iter_128pop_1.0alpha_4060.pkl', 'rb')
-    # continua ganhando da cpu e tempo quase igual
-    # f = open('testes/gecco/171224/results_35_100sim_30iter_128pop_1.0alpha_4060.pkl', 'rb')
-    #contiunua perdendo
-    # f = open('testes/gecco/171224/results_37_100sim_40iter_128pop_1.0alpha_4060.pkl', 'rb')
-
-    # f = open('testes/gecco/201224/results_32_100sim_30iter_128pop_1.0alpha_4060.pkl', 'rb')
-    # f = open('testes/gecco/201224/results_36_100sim_30iter_128pop_1.0alpha_4060.pkl', 'rb')
-
-    #testes 200625
-    # f = open('testes/results_11_100sim_30iter_128pop_1.0alpha_3060.pkl', 'rb')
-    # f = open('testes/results_12_100sim_30iter_128pop_1.0alpha_3060.pkl', 'rb')
-    # f = open('testes/results_13_100sim_30iter_128pop_1.0alpha_3060.pkl', 'rb')
-    # f = open('testes/results_16_100sim_30iter_128pop_1.0alpha_3060.pkl', 'rb')
-    # f = open('testes/200625/results_14_100sim_30iter_128pop_1.0alpha_3060.pkl', 'rb')
-    # f = open('results_21_100sim_30iter_128pop_6posdim_1.0alpha_3060_alan.pkl', 'rb')
-    # f = open('results_21_1000sim_60iter_128pop_6posdim_1.0alpha_3060.pkl', 'rb')
-    # f = open('results_21_100sim_600iter_128pop_6posdim_1.0alpha_3060.pkl', 'rb')
-    # f = open('results_21_50sim_1200iter_128pop_6posdim_1.0alpha_3060.pkl', 'rb')
-    # f = open('results_31_100sim_50iter_128pop_3posdim_1.0alpha_3060.pkl', 'rb')
-    # f = open('results_32_100sim_600iter_128pop_15posdim_0.1alpha_3060.pkl', 'rb')
-    f = open('results_21_50sim_1200iter_128pop_6posdim_1.0alpha_3060.pkl', 'rb')
+    f = open('results_11_100sim_30iter_128pop_10posdim_1.0alpha_3060.pkl', 'rb')
 
     results = pickle.load(f)
     f.close()

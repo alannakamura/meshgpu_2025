@@ -3,13 +3,10 @@ from tqdm import tqdm
 import os
 import pycuda.driver as drv
 
-# problem = [32]
-problem = [31, 33, 35, 36, 37]
-# problem = [1,3,4]
-# problem.reverse()
 # problem = [21]
-# problem = [11,12,13,14,16]
+problem = [11,12,13,14,16]
 # problem = [1,2,3,4,5,6,7]
+# problem = [31, 33, 35, 36, 37]
 alpha = [1.0]*len(problem)
 for j in range(len(problem)):
     print('problem', problem[j])
@@ -20,7 +17,7 @@ for j in range(len(problem)):
     num = 100
     iterations = 30
     population = 128
-    pos_dim = 15
+    pos_dim = 10
 
     f = open('results.pkl', 'wb')
     results = {'count': -1, 'cpu': [], 'gpu': []}
