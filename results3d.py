@@ -7,10 +7,6 @@ from pymoo.visualization.scatter import Scatter
 import numpy as np
 import pandas as pd
 from optimisationMap import *
-import datetime as dt
-# from pymoo.algorithms.moo.nsga2 import NSGA2
-# from pymoo.optimize import minimize
-
 
 # name_file = 'results.pkl'
 # name_file = 'results_1_10sim_30iter_128pop_3posdim_1.0alpha_3060.pkl'
