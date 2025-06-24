@@ -1,0 +1,61 @@
+differential mutation
+cpu 0.5702999999999991
+gpu 0.00141
+gpu/cpu 0.25%
+
+atualizacao fronts e memory update
+cpu 1.3109760000000001
+gpu 0.560134
+gpu/cpu 42.73%
+
+copia
+cpu 2.446018
+gpu 0.001776
+gpu/cpu 0.07%
+
+mutate weights
+cpu 2.416254
+gpu 2.416965
+gpu/cpu 100.03%
+
+global best
+cpu 6.464778999999999
+gpu 2.093875
+gpu/cpu 32.39%
+
+move+update personal
+cpu 0.723227
+gpu 0.00258
+gpu/cpu 0.36%
+
+fronts
+cpu 4.12385
+gpu 0.28220900000000004
+gpu/cpu 6.84%
+
+next generation
+cpu 12.06758
+gpu 0.037605
+gpu/cpu 0.31%
+
+update memory
+cpu 0.125767
+gpu 0.006544
+gpu/cpu 5.20%
+
+total
+41
+cpu 30.248750999999995
+gpu 5.403098
+gpu/cpu 17.86%
+44714999999995
+gpu 4.624368
+gpu/cpu 19.31%
+00000001
+gpu/cpu 18.27%
+8.98%
+pu 7.29%
+u/cpu 7.41%
+999997
+gpu/cpu 7.80%
+/cpu 8.94%
