@@ -115,149 +115,122 @@ class MESH_Params:
 
         self.func_n = func_n
 
-        if gpu:
-            self.objectives_dim_g = (
-                cuda.mem_alloc(np.array(objectives_dim, dtype=np.int32).nbytes))
-            cuda.memcpy_htod(self.objectives_dim_g,
-                             np.array(self.objectives_dim, dtype=np.int32))
 
-            self.otimizations_type_g = (
-                cuda.mem_alloc(np.array(otimizations_type, dtype=np.int32).nbytes))
-            cuda.memcpy_htod(self.otimizations_type_g,
-                             np.array(self.otimizations_type, dtype=np.int32))
+        # alocacao dos parametros na gpu
+        self.objectives_dim_g = (
+            cuda.mem_alloc(np.array(objectives_dim, dtype=np.int32).nbytes))
+        cuda.memcpy_htod(self.objectives_dim_g,
+                         np.array(self.objectives_dim, dtype=np.int32))
 
-            self.max_iterations_g = (
-                cuda.mem_alloc(np.array(max_iterations, dtype=np.int32).nbytes))
-            cuda.memcpy_htod(self.max_iterations_g,
-                             np.array(self.max_iterations, dtype=np.int32))
-            self.max_fitness_eval_g = (
-                cuda.mem_alloc(np.array(max_fitness_eval, dtype=np.int32).nbytes))
-            cuda.memcpy_htod(self.max_fitness_eval_g,
-                             np.array(self.max_fitness_eval, dtype=np.int32))
+        self.otimizations_type_g = (
+            cuda.mem_alloc(np.array(otimizations_type, dtype=np.int32).nbytes))
+        cuda.memcpy_htod(self.otimizations_type_g,
+                         np.array(self.otimizations_type, dtype=np.int32))
 
-            self.position_dim_g = (
-                cuda.mem_alloc(np.array(position_dim, dtype=np.int32).nbytes))
-            cuda.memcpy_htod(self.position_dim_g,
-                             np.array(self.position_dim, dtype=np.int32))
+        self.max_iterations_g = (
+            cuda.mem_alloc(np.array(max_iterations, dtype=np.int32).nbytes))
+        cuda.memcpy_htod(self.max_iterations_g,
+                         np.array(self.max_iterations, dtype=np.int32))
+        self.max_fitness_eval_g = (
+            cuda.mem_alloc(np.array(max_fitness_eval, dtype=np.int32).nbytes))
+        cuda.memcpy_htod(self.max_fitness_eval_g,
+                         np.array(self.max_fitness_eval, dtype=np.int32))
 
-            self.position_max_value_g = (
-                cuda.mem_alloc(np.array(position_max_value, dtype=np.float64).nbytes))
-            cuda.memcpy_htod(self.position_max_value_g,
-                             np.array(self.position_max_value, dtype=np.float64))
+        self.position_dim_g = (
+            cuda.mem_alloc(np.array(position_dim, dtype=np.int32).nbytes))
+        cuda.memcpy_htod(self.position_dim_g,
+                         np.array(self.position_dim, dtype=np.int32))
 
-            self.position_min_value_g = (
-                cuda.mem_alloc(np.array(position_min_value, dtype=np.float64).nbytes))
-            cuda.memcpy_htod(self.position_min_value_g,
-                             np.array(self.position_min_value, dtype=np.float64))
+        self.position_max_value_g = (
+            cuda.mem_alloc(np.array(position_max_value, dtype=np.float64).nbytes))
+        cuda.memcpy_htod(self.position_max_value_g,
+                         np.array(self.position_max_value, dtype=np.float64))
 
-            self.velocity_min_value_g = (
-                cuda.mem_alloc(np.array(self.velocity_min_value, dtype=np.float64).nbytes))
-            cuda.memcpy_htod(self.velocity_min_value_g,
-                             np.array(self.velocity_min_value, dtype=np.float64))
+        self.position_min_value_g = (
+            cuda.mem_alloc(np.array(position_min_value, dtype=np.float64).nbytes))
+        cuda.memcpy_htod(self.position_min_value_g,
+                         np.array(self.position_min_value, dtype=np.float64))
 
-            self.velocity_max_value_g = (
-                cuda.mem_alloc(np.array(self.velocity_max_value, dtype=np.float64).nbytes))
-            cuda.memcpy_htod(self.velocity_max_value_g,
-                             np.array(self.velocity_max_value, dtype=np.float64))
+        self.velocity_min_value_g = (
+            cuda.mem_alloc(np.array(self.velocity_min_value, dtype=np.float64).nbytes))
+        cuda.memcpy_htod(self.velocity_min_value_g,
+                         np.array(self.velocity_min_value, dtype=np.float64))
 
-            self.population_size_g = (
-                cuda.mem_alloc(np.array(self.population_size, dtype=np.int32).nbytes))
-            cuda.memcpy_htod(self.population_size_g,
-                             np.array(self.population_size, dtype=np.int32))
+        self.velocity_max_value_g = (
+            cuda.mem_alloc(np.array(self.velocity_max_value, dtype=np.float64).nbytes))
+        cuda.memcpy_htod(self.velocity_max_value_g,
+                         np.array(self.velocity_max_value, dtype=np.float64))
 
-            self.memory_size_g = (
-                cuda.mem_alloc(np.array(self.memory_size, dtype=np.int32).nbytes))
-            cuda.memcpy_htod(self.memory_size_g,
-                             np.array(self.memory_size, dtype=np.int32))
+        self.population_size_g = (
+            cuda.mem_alloc(np.array(self.population_size, dtype=np.int32).nbytes))
+        cuda.memcpy_htod(self.population_size_g,
+                         np.array(self.population_size, dtype=np.int32))
 
-            self.current_memory_size = 0
+        self.memory_size_g = (
+            cuda.mem_alloc(np.array(self.memory_size, dtype=np.int32).nbytes))
+        cuda.memcpy_htod(self.memory_size_g,
+                         np.array(self.memory_size, dtype=np.int32))
 
-            self.current_memory_size_g = (
-                cuda.mem_alloc(np.array(self.memory_size, dtype=np.int32).nbytes))
-            cuda.memcpy_htod(self.current_memory_size_g,
-                             np.array(-1, dtype=np.int32))
+        self.current_memory_size = 0
 
-            self.memory_update_type_g = (
-                cuda.mem_alloc(np.array(self.memory_update_type, dtype=np.int32).nbytes))
-            cuda.memcpy_htod(self.memory_update_type_g,
-                             np.array(self.memory_update_type, dtype=np.int32))
+        self.current_memory_size_g = (
+            cuda.mem_alloc(np.array(self.memory_size, dtype=np.int32).nbytes))
+        cuda.memcpy_htod(self.current_memory_size_g,
+                         np.array(-1, dtype=np.int32))
 
-            self.global_best_attribution_type_g = (
-                cuda.mem_alloc(np.array(self.global_best_attribution_type, dtype=np.int32).nbytes))
-            cuda.memcpy_htod(self.global_best_attribution_type_g,
-                             np.array(self.global_best_attribution_type, dtype=np.int32))
+        self.memory_update_type_g = (
+            cuda.mem_alloc(np.array(self.memory_update_type, dtype=np.int32).nbytes))
+        cuda.memcpy_htod(self.memory_update_type_g,
+                         np.array(self.memory_update_type, dtype=np.int32))
 
-            self.DE_mutation_type_g = (
-                cuda.mem_alloc(np.array(self.DE_mutation_type, dtype=np.int32).nbytes))
-            cuda.memcpy_htod(self.DE_mutation_type_g,
-                             np.array(self.DE_mutation_type, dtype=np.int32))
+        self.global_best_attribution_type_g = (
+            cuda.mem_alloc(np.array(self.global_best_attribution_type, dtype=np.int32).nbytes))
+        cuda.memcpy_htod(self.global_best_attribution_type_g,
+                         np.array(self.global_best_attribution_type, dtype=np.int32))
 
-            self.Xr_pool_type_g = (
-                cuda.mem_alloc(np.array(self.Xr_pool_type, dtype=np.int32).nbytes))
-            cuda.memcpy_htod(self.Xr_pool_type_g,
-                             np.array(self.Xr_pool_type, dtype=np.int32))
+        self.DE_mutation_type_g = (
+            cuda.mem_alloc(np.array(self.DE_mutation_type, dtype=np.int32).nbytes))
+        cuda.memcpy_htod(self.DE_mutation_type_g,
+                         np.array(self.DE_mutation_type, dtype=np.int32))
 
-            self.crowd_distance_type_g = (
-                cuda.mem_alloc(np.array(self.crowd_distance_type, dtype=np.int32).nbytes))
-            cuda.memcpy_htod(self.crowd_distance_type_g,
-                             np.array(self.crowd_distance_type, dtype=np.int32))
+        self.Xr_pool_type_g = (
+            cuda.mem_alloc(np.array(self.Xr_pool_type, dtype=np.int32).nbytes))
+        cuda.memcpy_htod(self.Xr_pool_type_g,
+                         np.array(self.Xr_pool_type, dtype=np.int32))
 
-            self.communication_probability_g = (
-                cuda.mem_alloc(np.array(self.communication_probability, dtype=np.float64).nbytes))
-            cuda.memcpy_htod(self.communication_probability_g,
-                             np.array(self.communication_probability, dtype=np.float64))
+        self.crowd_distance_type_g = (
+            cuda.mem_alloc(np.array(self.crowd_distance_type, dtype=np.int32).nbytes))
+        cuda.memcpy_htod(self.crowd_distance_type_g,
+                         np.array(self.crowd_distance_type, dtype=np.int32))
 
-            self.mutation_rate_g = (
-                cuda.mem_alloc(np.array(self.mutation_rate, dtype=np.float64).nbytes))
-            cuda.memcpy_htod(self.mutation_rate_g,
-                             np.array(self.mutation_rate, dtype=np.float64))
+        self.communication_probability_g = (
+            cuda.mem_alloc(np.array(self.communication_probability, dtype=np.float64).nbytes))
+        cuda.memcpy_htod(self.communication_probability_g,
+                         np.array(self.communication_probability, dtype=np.float64))
 
-            self.personal_guide_array_size_g = (
-                cuda.mem_alloc(np.array(self.personal_guide_array_size, dtype=np.int32).nbytes))
-            cuda.memcpy_htod(self.personal_guide_array_size_g,
-                             np.array(self.personal_guide_array_size, dtype=np.int32))
+        self.mutation_rate_g = (
+            cuda.mem_alloc(np.array(self.mutation_rate, dtype=np.float64).nbytes))
+        cuda.memcpy_htod(self.mutation_rate_g,
+                         np.array(self.mutation_rate, dtype=np.float64))
 
-            self.secondary_params_g = (
-                cuda.mem_alloc(np.array(self.secondary_params, dtype=np.int32).nbytes))
-            cuda.memcpy_htod(self.secondary_params_g,
-                             np.array(self.secondary_params, dtype=np.int32))
+        self.personal_guide_array_size_g = (
+            cuda.mem_alloc(np.array(self.personal_guide_array_size, dtype=np.int32).nbytes))
+        cuda.memcpy_htod(self.personal_guide_array_size_g,
+                         np.array(self.personal_guide_array_size, dtype=np.int32))
 
-            self.initial_state_g = (
-                cuda.mem_alloc(np.array(self.initial_state, dtype=np.int32).nbytes))
-            cuda.memcpy_htod(self.initial_state_g,
-                             np.array(self.initial_state, dtype=np.int32))
+        self.secondary_params_g = (
+            cuda.mem_alloc(np.array(self.secondary_params, dtype=np.int32).nbytes))
+        cuda.memcpy_htod(self.secondary_params_g,
+                         np.array(self.secondary_params, dtype=np.int32))
 
-            self.func_n_g = (
-                cuda.mem_alloc(np.array([0], dtype=np.int32).nbytes))
-            cuda.memcpy_htod(self.func_n_g,np.array([self.func_n], dtype=np.int32))
+        self.initial_state_g = (
+            cuda.mem_alloc(np.array(self.initial_state, dtype=np.int32).nbytes))
+        cuda.memcpy_htod(self.initial_state_g,
+                         np.array(self.initial_state, dtype=np.int32))
 
-            fmt = "P" * 21
-            data = struct.pack(fmt, self.objectives_dim_g, self.otimizations_type_g,
-                               self.max_iterations_g, self.max_fitness_eval_g, self.position_dim_g,
-                               self.position_max_value_g, self.position_min_value_g,
-                               self.velocity_min_value_g, self.velocity_max_value_g,
-                               self.population_size_g, self.memory_size_g, self.memory_update_type_g,
-                               self.global_best_attribution_type_g, self.DE_mutation_type_g,
-                               self.Xr_pool_type_g, self.crowd_distance_type_g,
-                               self.communication_probability_g, self.mutation_rate_g,
-                               self.personal_guide_array_size_g, self.secondary_params_g,
-                               self.initial_state_g)
-            size = struct.calcsize(fmt)
-            # print('size', size)
-            self.gpu = cuda.mem_alloc(size)
-            cuda.memcpy_htod(self.gpu, data)
-
-            # f = open('mesh.cu')
-            # code = f.read()
-            # f.close()
-            # mod = SourceModule(code)
-            #
-            # test_mesh_params = mod.get_function("test_mesh_params")
-            # test_mesh_params(self.gpu, block=(1, 1, 1), grid=(1, 1))
-            # cuda.Context.synchronize()
-
-            # cuda.memcpy_htod(self.c_gpu, data)
-
+        self.func_n_g = (
+            cuda.mem_alloc(np.array([0], dtype=np.int32).nbytes))
+        cuda.memcpy_htod(self.func_n_g,np.array([self.func_n], dtype=np.int32))
 
 class MESH:
     def __init__(self, params, fitness_function, max_num_iters=40, alpha=-1, gpu=True):
@@ -292,16 +265,14 @@ class MESH:
 
         if gpu:
             total = self.params.population_size * 2 + self.params.memory_size
-            # total2 = self.params.population_size*3+self.params.memory_size
 
             self.position = (
-                cuda.mem_alloc(np.zeros(total * self.params.position_dim, dtype=np.float64).nbytes))
-
-            # self.velocity = (
-            #     cuda.mem_alloc(np.zeros(total*self.params.position_dim, dtype=np.float64).nbytes))
+                cuda.mem_alloc(np.zeros(total * self.params.position_dim,
+                                        dtype=np.float64).nbytes))
 
             self.fitness = (
-                cuda.mem_alloc(np.zeros(total * self.params.objectives_dim, dtype=np.float64).nbytes))
+                cuda.mem_alloc(np.zeros(total * self.params.objectives_dim,
+                                        dtype=np.float64).nbytes))
 
             self.alpha_g = (
                 cuda.mem_alloc(np.array(self.alpha, dtype=np.float64).nbytes))
@@ -374,22 +345,10 @@ class MESH:
             cuda.memcpy_htod(self.crowding_distance_g,
                              np.zeros(total, dtype=np.float64))
 
-            # total = (self.params.population_size * 2 + self.params.memory_size)*self.
-            # params.personal_guide_array_size
-            # self.personal_best_g = (
-            #     cuda.mem_alloc(np.zeros(total, dtype=np.int32).nbytes))
-            # cuda.memcpy_htod(self.personal_best_g,
-            #                  -1+np.zeros(total, dtype=np.int32))
-
             self.whatPersonal = -1 * np.ones(self.params.population_size * 2 + self.params.memory_size,
                                              dtype=np.int32)
             self.whatPersonal_g = cuda.mem_alloc(self.whatPersonal.nbytes)
             cuda.memcpy_htod(self.whatPersonal_g, self.whatPersonal)
-
-            # self.xr_pool = np.zeros(self.params.population_size * 2 + self.params.memory_size,
-            #                         dtype=np.int32)
-            # self.xr_pool_g = cuda.mem_alloc(self.xr_pool.nbytes)
-            # cuda.memcpy_htod(self.xr_pool_g, self.xr_pool)
 
             self.xr_pool = np.zeros((self.params.population_size * 2 + self.params.memory_size) *
                                     self.params.population_size,
@@ -450,8 +409,6 @@ class MESH:
 
             self.population_index = np.zeros(self.params.population_size * 2, dtype=np.int32)
             self.population_index_g = cuda.mem_alloc(self.population_index.nbytes)
-
-            total = self.params.population_size * 2 + self.params.memory_size
 
             self.rank_g = (
                 cuda.mem_alloc(np.zeros(total, dtype=np.int32).nbytes))
@@ -528,16 +485,6 @@ class MESH:
 
             self.initial_memory = np.zeros(self.params.population_size, dtype=np.int32)
             self.initial_memory_g = cuda.mem_alloc(self.initial_memory.nbytes)
-
-            fmt = "P" * 9
-            data = struct.pack(fmt, self.params.gpu, self.stopping_criteria_reached_g, self.generation_count_g,
-                               self.fitness_eval_count_g, self.weights_g, self.weights_copy_g,
-                               self.update_from_differential_mutation_g, self.copy_pop_g,
-                               self.domination_counter_g)
-            size = struct.calcsize(fmt)
-            # print('\nsize\n', size)
-            self.gpu = cuda.mem_alloc(size)
-            cuda.memcpy_htod(self.gpu, data)
 
             f = open('mesh.cu')
             code = f.read()
