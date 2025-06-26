@@ -1706,12 +1706,10 @@ __global__ void fast_nondominated_sort3(int *domination_counter, int *colunas, i
                 domination_counter[population_size[0]*colunas[0]+i] = -1;
                 fronts[j2] = i;
                 rank[i] = rank_count;
-//                 printf("%d ",i);
                 j2+=1;
                 tamP+=1;
             }
         }
-//         printf("\n");
         tam[k] = tamP;
         k+=1;
     }

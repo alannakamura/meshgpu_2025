@@ -1741,13 +1741,7 @@ class MESH:
                 if 2 <= self.params.DE_mutation_type <= 4:
                     self.global_best_attribution()
 
-                for i, p in enumerate(self.population):  # 0:00:01.215242 de 0:00:45.768188
-                    start = dt.now()
-                    cpu[0] += (dt.now() - start).total_seconds()
-
                 if self.gpu:
-                    start = dt.now()
-
                     cuda.memcpy_htod(self.seed_g, np.random.randint(0, int(1e9), dtype=np.int32))
                     differential_mutation = self.mod.get_function("differential_mutation")
                     differential_mutation(self.params.func_n_g, self.params.Xr_pool_type_g,
@@ -1766,11 +1760,6 @@ class MESH:
                                           self.update_from_differential_mutation_g, self.seed_g, self.alpha_g,
                                           block=(self.params.population_size, 1, 1), grid=(1, 1, 1))
                     cuda.Context.synchronize()
-
-                    gpu[0] += (dt.now() - start).total_seconds()
-
-                start = dt.now()
-                cpu[1] += (dt.now() - start).total_seconds()
 
                 if self.gpu:
 
@@ -1800,6 +1789,7 @@ class MESH:
                     cuda.Context.synchronize()
 
                     # atualiza memoria pela GPU
+                    # inicializa o vetor front0+memoria
                     inicialize_front0_mem = self.mod.get_function("inicialize_front0_mem")
                     inicialize_front0_mem(self.fronts_g, self.front0_mem_g, self.tams_fronts_g,
                                           self.tam_front0_mem_g, self.position_g, self.params.memory_size_g,
@@ -1835,14 +1825,14 @@ class MESH:
                                             grid=(1, 1, 1))
                     cuda.Context.synchronize()
 
-                    # self.front0_g testeTempo250624 o front zero do conjunto front0 da populacao + memoria atual
                     fast_nondominated_sort6 = self.mod.get_function("fast_nondominated_sort6")
                     fast_nondominated_sort6(self.domination_counter_g, self.tam_front0_mem_g,
                                             self.front0_mem_g, self.tam_front0_g, self.front0_g,
                                             block=(1, 1, 1), grid=(1, 1, 1))
                     cuda.Context.synchronize()
 
-                    i_g = cuda.mem_alloc(np.array([1], np.int32).nbytes) #cosnertar depois, colocar como atributo
+                    i_g = cuda.mem_alloc(np.array([1], np.int32).nbytes)
+                    #melhorar depois, colocar como atributo
                     tam_front0 = np.zeros(1, dtype=np.int32)
                     cuda.memcpy_dtoh(tam_front0, self.tam_front0_g)
                     if tam_front0[0] <= self.params.memory_size:
@@ -1857,7 +1847,7 @@ class MESH:
                                                  block=(int(tam_front0[0]), 1, 1), grid=(1, 1, 1))
                         cuda.Context.synchronize()
 
-                        # move para a sprimeiras posicoes da memoria os valores dos vetores auxiliares
+                        # move para as primeiras posicoes da memoria os valores dos vetores auxiliares
                         memory_inicialization2_2 = self.mod.get_function("memory_inicialization2_2")
                         memory_inicialization2_2(self.position_g, self.fitness_g, self.front0_g,
                                                  self.params.position_dim_g, self.params.objectives_dim_g,
@@ -1917,12 +1907,7 @@ class MESH:
 
                     gpu[1] += (dt.now() - start).total_seconds()
 
-
                 start = dt.now()
-                cpu[2] += (dt.now() - start).total_seconds()
-
-                start = dt.now()
-
                 if self.gpu:
 
                     # copia de position
