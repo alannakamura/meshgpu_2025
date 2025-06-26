@@ -1612,47 +1612,16 @@ int *colunas, int *minimization, int *colunas2, int *front0_mem, int *tam_front0
 __global__ void fast_nondominated_sort4_2(double *fitness, int *dim, int *domination_counter,
 int *colunas, int *minimization, int *colunas2, int *front0_mem, int *tam_front0_mem)
 {
-//     int l = blockIdx.x*gridDim.x+threadIdx.x;
     int l = blockIdx.x*blockDim.x+threadIdx.x;
     int c = blockIdx.y*blockDim.y+threadIdx.y;
     int l2, c2;
-//     int l2 = front0_mem[threadIdx.x];
-//     int c2 = front0_mem[threadIdx.y];
 
     if(l < tam_front0_mem[0] && c<tam_front0_mem[0])
     {
-       l2 = front0_mem[l];
-       c2 = front0_mem[c];
-    //     int c = blockIdx.y*gridDim.y+threadIdx.y;
-    //     int tam = gridDim.y*blockDim.y;
-    //     printf("l=%d c=%d bx=%d by=%d gdx=%d gdy=%d tx=%d ty=%d\n",l, c,
-    //     blockIdx.x, blockIdx.y, gridDim.x, gridDim.y, threadIdx.x, threadIdx.y);
-    //     printf("i=%d j=%d tam=%d\n", l,c,tam);
-    //     printf("fitness[0]=%lf fitness[1]=%lf\n", (fitness+l)[0], (fitness+l)[1]);
+        l2 = front0_mem[l];
+        c2 = front0_mem[c];
         domination_counter[l*tam_front0_mem[0]+c] = 0;
-    //     printf("tam %d\n", tam);
-    //     if(l2 == 256 && c2 == 5)
-    //     {
-    //         printf("%d %d %d %d %lf %lf\n", l, c, l2, c2, fitness[l2*2], fitness[l2*2+1]);
-    //         printf("%d %d %d %d %lf %lf\n", l, c, l2, c2, fitness[c2*2], fitness[c2*2+1]);
-    //         printf("%d\n", domination_counter[l*tam_front0_mem[0]+c]);
-    //     }
         domination_counter[l*tam_front0_mem[0]+c] = a_dominate_b(fitness+l2*colunas2[0], fitness+c2*colunas2[0], dim[0], minimization);
-    //     if(l2 == 256 && c2 == 5)
-    //     {
-    //         printf("%d %d %d %d %lf %lf\n", l, c, l2, c2, fitness[l2*2], fitness[l2*2+1]);
-    //         printf("%d %d %d %d %lf %lf\n", l, c, l2, c2, fitness[c2*2], fitness[c2*2+1]);
-    //         printf("%d\n", domination_counter[l*tam_front0_mem[0]+c]);
-    //     }
-    //     if(l==127 && c==127)
-    //     {
-    //         printf("%lf %lf\n", fitness[8*colunas2[0]], fitness[8*colunas2[0]+1]);
-    //         printf("%lf %lf\n", fitness[19*colunas2[0]], fitness[19*colunas2[0]+1]);
-    //         printf("%d %d %d %d\n", minimization[0], minimization[1],domination_counter[8*tam+19], tam);
-    //     }
-    //     printf("%d %d %d %d %d %d %d %d %lf %lf %lf %lf\n", l, c, blockIdx.x, blockIdx.y, threadIdx.x, threadIdx.y, tam,
-    //      domination_counter[l*tam+c], (fitness+l*colunas2[0])[0], (fitness+l*colunas2[0])[1],(fitness+c*colunas2[0])[0],
-    //       (fitness+c*colunas2[0])[1]);
     }
 }
 
@@ -1884,7 +1853,7 @@ double *crowd_distance)
 {
     int j,k,p1,p2, temp;
     double temp2;
-//     printf("%d", dim[0]);
+
     for(j=0;j<dim[0]-1;j++)
     {
         for(k=j+1;k<dim[0];k++)
@@ -2296,7 +2265,6 @@ __global__ void memory_inicialization2_1(double *position, double *fitness, int 
         aux2[i*objectives_dim[0]+j] =
         fitness[k*objectives_dim[0]+j];
     }
-//     printf("i=%d, k=%d\n",i,k);
 }
 
 __global__ void memory_inicialization2_2(double *position, double *fitness, int *fronts,
@@ -3231,70 +3199,15 @@ __global__ void differential_mutation(int *func_n, int *xr_pool_type, int *tam_p
 
     curand_init(seed[0], i, 0, &state);
 
-    mutation_index_l = xr_pool[(int)(curand_uniform(&state)*tam_pos[0])];
+//     mutation_index_l = xr_pool[(int)(curand_uniform(&state)*tam_pos[0])];
+    mutation_index_l = (int)(curand_uniform(&state)*(tam_pos[0]-1));
     for(j=0;j<tam_pos[0];j++)
     {
         mutation_chance_l[j] = curand_uniform(&state);
     }
-//     if(i==0)
-//     {
-//         for(j=0;j<tam_fit[0];j++)
-//         {
-//             printf("%lf ", fitness[j]);
-//         }
-//         printf("\n");
-//     }
-//     if(i==1)
-//     {
-//         for(j=0;j<tam_pos[0];j++)
-//         {
-//             printf("%lf ", mutation_chance_l[j]);
-//         }
-//         printf("\n");
-//     }
-//     if(i<3)
-//     {
-//         printf("i=%d, mi = %d\n",i,mutation_index_l);
-//     }
-
-//     if(i==0)
-//     {
-//         xr_list_l[0] = (int)(curand_uniform(&state)*100);
-//         xr_list_l[1] = (int)(curand_uniform(&state)*100);
-//         printf("xr_list_l0 = %d %d", xr_list_l[0], xr_list_l[1]);
-//     }
-//
-//     if(i==1)
-//     {
-//         xr_list_l[0] = (int)(curand_uniform(&state)*100);
-//         xr_list_l[1] = (int)(curand_uniform(&state)*100);
-//         printf("xr_list_l1 = %d %d", xr_list_l[0], xr_list_l[1]);
-//     }
-//     int temp3;
-//     const int b = 2*tam_pop[0]+tam_mem[0];
-//     int xr_pool[b], k=0;
-//     printf("i=%d xr=%d what=%d\n", i, xr_pool_type[0], whatPersonal[i]);
-
-//     if(i == 80)
-//     {
-//         printf("wp %d %d %d", i, whatPersonal[0],  whatPersonal[80]);
-//     }
 
     tamPersonal = tam_pos[0]*personal_guide_array_size[0];
 
-//     Xr_pool = []
-//         personal_best = particle.personal_best[np.random.choice(len(particle.personal_best))]
-//
-//         if self.params.Xr_pool_type == 0: # Apenas Populacao
-//             for p in self.population:
-//                 if not personal_best == p or not particle == p:
-//                     if not particle >> p:
-//                         Xr_pool.append(p)
-//         elif self.params.Xr_pool_type == 1: # Apenas Memoria
-//             for m in self.memory:
-//                 if not personal_best == m or not particle == m:
-//                     if not particle >> m:
-//                         Xr_pool.append(m)
     if(xr_pool_type[0] == 1)// Apenas Memoria
     {
         for(j=0;j<tam_mem[0];j++)
@@ -3307,66 +3220,19 @@ __global__ void differential_mutation(int *func_n, int *xr_pool_type, int *tam_p
 //             particle == m
             temp2 = equal(position+(i*tam_pos[0]),
             position+(2*tam_pop[0]+j)*tam_pos[0], tam_pos);
-//             if(temp1 == 1)
-//             {
-//                 printf("i = %d, j = %d\n", i, j);
-//             }
-//             if(temp2==1)
-//             {
-//                 printf("i = %d, j = %d\n", i, j);
-//             }
+
             if(!(temp1 == 1) || !(temp2 == 1))
             {
-//                 printf("i = %d, j = %d\n", i, j);
-//                 if not i >> j
-//                 if(i == 31)
-//                 {
-//                     temp3 = a_dominate_b(fitness+(i*tam_fit[0]), fitness+(2*tam_pop[0]+j)*tam_fit[0],
-//                     tam_fit[0], maximize);
-//                     printf("i = %d j = %d %lf %lf %lf %lf dom = %d max = %d %d i*tamfit %d 2*tam_pop[0]+j %d\n", i, j,
-//                     fitness[i*2+0], fitness[i*2+1], fitness[(2*tam_pop[0]+j)*2],
-//                     fitness[(2*tam_pop[0]+j)*2+1], temp3, maximize[0], maximize[1], i*tam_fit[0], 2*tam_pop[0]+j);
-//                 }
                 if(a_dominate_b(fitness+i*tam_fit[0], fitness+(2*tam_pop[0]+j)*tam_fit[0],
                  tam_fit[0], maximize) == 0)
                 {
-//                     if(i == 12)
-//                     {
-//                         printf("i = %d j = %d\n", i, j);
-//                     }
                     xr_pool[i*(2*tam_pop[0]+tam_mem[0])+k] = j;
                     pool_tam+=1;
                     k+=1;
                 }
             }
         }
-//         if(k<2*tam_pop[0]+tam_mem[0])
-//         {
-//             xr_pool[i*(2*tam_pop[0]+tam_mem[0])+k] = -1;
-//         }
     }
-//         elif self.params.Xr_pool_type == 2: # Combinacao Memoria e Populacao
-//             for m in self.memory:
-//                 if not personal_best == m and not particle == m:
-//                     if not particle >> m:
-//                          Xr_pool.append(m)
-//             for p in self.population:
-//                 if not personal_best == p and not particle == p and p not in Xr_pool and p.rank > particle.rank:
-//                     if not particle >> p:
-//                         Xr_pool.append(p)
-//
-//     printf("%d \n", DE_mutation_type[0]);
-//         if self.params.DE_mutation_type == 0 and len(Xr_pool) >= 3: //DE\rand\1\Bin
-
-//     if(i == 12)
-//     {
-//         printf("\n%d %d %d k = %d\n", xr_list[i*5+0], xr_list[i*5+1], xr_list[i*5+2], k);
-//     }
-//     if(i == 31)
-//     {
-//         printf("\n xr_pool = %d %d %d %d %d\n", xr_pool[i*261], xr_pool[i*261+1], xr_pool[i*261+2],
-//         xr_pool[i*261+3], xr_pool[i*261+4]);
-//     }
 
     if(DE_mutation_type[0] == 0 && k >= 3) //DE\rand\1\Bin
     {
@@ -3374,34 +3240,14 @@ __global__ void differential_mutation(int *func_n, int *xr_pool_type, int *tam_p
         xr_list_l[1] = xr_pool[(int)(curand_uniform(&state)*pool_tam)];
         xr_list_l[2] = xr_pool[(int)(curand_uniform(&state)*pool_tam)];
 
-//         if(i==0)
-//         {
-//             printf("xr_list_l0 = %d %d %d pool_tam = %d\n", xr_list_l[0], xr_list_l[1], xr_list_l[2], pool_tam);
-//         }
-//         if(i==1)
-//         {
-//             printf("xr_list_l1 = %d %d %d pool_tam = %d\n", xr_list_l[0], xr_list_l[1], xr_list_l[2], pool_tam);
-//         }
-
         for(j=0;j<tam_pos[0];j++)
         {
-//             xst[i*tam_pos[0]+j] = position[(2*tam_pop[0]+xr_list[i*5+1])*(tam_pos[0])+j] -
-//             position[(2*tam_pop[0]+xr_list[i*5+2])*(tam_pos[0])+j];
-//             xst[i*tam_pos[0]+j] *= weights[5*tam_pop[0]+i];
-//             xst[i*tam_pos[0]+j] += position[(2*tam_pop[0]+xr_list[i*5+0])*(tam_pos[0])+j];
+            //faz xst = (xr1-xr2)w5 + xr0
             xst[i*tam_pos[0]+j] = position[(2*tam_pop[0]+xr_list_l[1])*(tam_pos[0])+j] -
             position[(2*tam_pop[0]+xr_list[2])*(tam_pos[0])+j];
             xst[i*tam_pos[0]+j] *= weights[5*tam_pop[0]+i];
             xst[i*tam_pos[0]+j] += position[(2*tam_pop[0]+xr_list[0])*(tam_pos[0])+j];
 
-//             if(i == 12)
-//             {
-//                 for(k=0;k<10;k++)
-//                 {
-//                     printf("%lf ",xst[i*tam_pos[0]+k]);
-//                 }
-//                 printf("\n");
-//             }
             if(xst[i*tam_pos[0]+j]<pos_min[0])
             {
                 xst[i*tam_pos[0]+j] = pos_min[0];
@@ -3410,334 +3256,128 @@ __global__ void differential_mutation(int *func_n, int *xr_pool_type, int *tam_p
             {
                 xst[i*tam_pos[0]+j] = pos_max[0];
             }
-//             if(j == mutation_index[i] || (mutation_chance[i*tam_pos[0]+j] < weights[4*tam_pop[0]+i]))
+
             if(j == mutation_index_l || (mutation_chance_l[j] < weights[4*tam_pop[0]+i]))
             {
                 xst[i*tam_pos[0]+j] =
-//                 personal_best_p[i*tamPersonal+whatPersonal[i]*tam_pos[0]+j];
                 personal_best_p[i*tamPersonal+whatPersonal_l*tam_pos[0]+j];
             }
-//             if(i == 13)
-//             {
-//                 for(k=0;k<10;k++)
-//                 {
-//                     printf("%lf ",xst[i*tam_pos[0]+k]);
-//                 }
-//                 printf("\n");
-//             }
         }
-//         if(i == 1)
-//         {
-//             printf("\n%d %d %d\n", xr_list[i*5+0], xr_list[i*5+1], xr_list[i*5+2]);
-//             printf("\n%d %d %d\n", (2*tam_pop[0]+xr_list[i*5+0])*(tam_pos[0]), (2*tam_pop[0]+xr_list[i*5+1])*(tam_pos[0])
-//             ,(2*tam_pop[0]+xr_list[i*5+2])*(tam_pos[0]));
-//             printf("%lf ",weights[5*tam_pop[0]+i]);
-//             for(k=0;k<10;k++)
-//             {
-//                 printf("%lf ", position[(2*tam_pop[0]+xr_list[i*5+0])*(tam_pos[0])+k]);
-//             }
-//             printf("\n");
-//             for(k=0;k<10;k++)
-//             {
-//                 printf("%lf ", position[(2*tam_pop[0]+xr_list[i*5+1])*(tam_pos[0])+k]);
-//             }
-//             printf("\n");
-//             for(k=0;k<10;k++)
-//             {
-//                 printf("%lf ", position[(2*tam_pop[0]+1)*(tam_pos[0])+k]);
-//             }
-//             printf("\n");
-//             for(k=0;k<10;k++)
-//             {
-//                 printf("%lf ", position[(2*tam_pop[0]+xr_list[i*5+2])*(tam_pos[0])+k]);
-//             }
-//             printf("\n");
-//         }
     }
-//
-//         elif self.params.DE_mutation_type == 1 and len(Xr_pool) >= 5: #DE\rand\2\Bin
-//             Xr_list = np.random.choice(Xr_pool, 5, replace=False)
-//
-//             Xr1 = np.asarray(Xr_list[0].position)
-//             Xr2 = np.asarray(Xr_list[1].position)
-//             Xr3 = np.asarray(Xr_list[2].position)
-//             Xr4 = np.asarray(Xr_list[3].position)
-//             Xr5 = np.asarray(Xr_list[4].position)
-//
-//             Xst = Xr1 + self.weights[5][particle_index] * ((Xr2 - Xr3) + (Xr4 - Xr5))
-//             Xst = Xst.tolist()
-//             Xst = self.check_position_limits(Xst)
-//
-//             mutation_index = np.random.choice(self.params.position_dim)
-//             mutation_chance = np.random.uniform(0.0, 1.0,self.params.position_dim)
-//
-//             for i in range(self.params.position_dim):
-//                 if (mutation_chance[i] < self.weights[4][particle_index] or i == mutation_index):
-//                     Xst[i] = personal_best.position[i]
-//
-//         elif self.params.DE_mutation_type == 2 and len(Xr_pool) >= 2: #DE/Best/1/Bin
-//             Xr_list = np.random.choice(Xr_pool, 2, replace=False)
-//
-//             Xr1 = np.asarray(Xr_list[0].position)
-//             Xr2 = np.asarray(Xr_list[1].position)
-//
-//             Xst = particle.global_best.position + self.weights[5][particle_index] * (Xr1 - Xr2)
-//             Xst = Xst.tolist()
-//             Xst = self.check_position_limits(Xst)
-//
-//             mutation_index = np.random.choice(self.params.position_dim)
-//             mutation_chance = np.random.uniform(0.0, 1.0, self.params.position_dim)
-//
-//             for i in range(self.params.position_dim):
-//                 if not (mutation_chance[i] < self.weights[4][particle_index] or i == mutation_index):
-//                     Xst[i] = particle.global_best.position[i]
-//
-//         elif self.params.DE_mutation_type == 3 and len(Xr_pool) >= 2:  # DE/Current-to-best/1/Bin
-//             Xr_list = np.random.choice(Xr_pool, 2, replace=False)
-//
-//             Xr1 = np.asarray(Xr_list[0].position)
-//             Xr2 = np.asarray(Xr_list[1].position)
-//
-//             Xst = np.asarray(personal_best.position) + self.weights[5][particle_index] * ((Xr1 - Xr2) + (np.asarray(particle.global_best.position) - np.asarray(personal_best.position)))
-//             Xst = Xst.tolist()
-//             Xst = self.check_position_limits(Xst)
-//
-//             mutation_index = np.random.choice(self.params.position_dim)
-//             mutation_chance = np.random.uniform(0.0, 1.0, self.params.position_dim)
-//
-//             for i in range(self.params.position_dim):
-//                 if not (mutation_chance[i] < self.weights[4][particle_index] or i == mutation_index):
-//                     Xst[i] = particle.global_best.position[i]
-//
-//         elif self.params.DE_mutation_type == 4 and len(Xr_pool) >= 3:  # DE/Current-to-rand/1/Bin
-//             Xr_list = np.random.choice(Xr_pool, 3, replace=False)
-//
-//             Xr1 = np.asarray(Xr_list[0].position)
-//             Xr2 = np.asarray(Xr_list[1].position)
-//             Xr3 = np.asarray(Xr_list[2].position)
-//
-//             Xst = np.asarray(personal_best.position) + self.weights[5][particle_index] * ((Xr1 - Xr2) + (Xr3 - np.asarray(personal_best.position)))
-//             Xst = Xst.tolist()
-//             Xst = self.check_position_limits(Xst)
-//
-//             mutation_index = np.random.choice(self.params.position_dim)
-//             mutation_chance = np.random.uniform(0.0, 1.0, self.params.position_dim)
-//
-//             for i in range(self.params.position_dim):
-//                 if not (mutation_chance[i] < self.weights[4][particle_index] or i == mutation_index):
-//                     Xst[i] = particle.global_best.position[i]
-//
-//         else:
-//             return
 
+    // avaliar xst
+    if(func_n[0]==11)
+    {
+        zdt1_device(xst, tam_pos, xst_fitness, i);
+    }
+    if(func_n[0]==12)
+    {
+        zdt2_device(xst, tam_pos, xst_fitness, i);
+    }
+    if(func_n[0]==13)
+    {
+        zdt3_device(xst, tam_pos, xst_fitness, i);
+    }
+    if(func_n[0]==14)
+    {
+        zdt4_device(xst, tam_pos, xst_fitness, i);
+    }
+    if(func_n[0]==15)
+    {
+        zdt5(xst, tam_pos, xst_fitness, i);
+    }
+    if(func_n[0]==16)
+    {
+        zdt6(xst, tam_pos, xst_fitness, i);
+    }
+    if(func_n[0]==1)
+    {
+        dtlz1(xst, tam_pos, xst_fitness, i);
+    }
+    if(func_n[0]==2)
+    {
+        dtlz2(xst, tam_pos, xst_fitness, i);
+    }
+    if(func_n[0]==3)
+    {
+        dtlz3(xst, tam_pos, xst_fitness, i);
+    }
+    if(func_n[0]==4)
+    {
+        dtlz4(xst, tam_pos, xst_fitness, i);
+    }
+    if(func_n[0]==5)
+    {
+        dtlz5(xst, tam_pos, xst_fitness, i);
+    }
+    if(func_n[0]==6)
+    {
+        dtlz6(xst, tam_pos, xst_fitness, i);
+    }
+    if(func_n[0]==7)
+    {
+        dtlz7(xst, tam_pos, xst_fitness, i);
+    }
+    if(func_n[0] == 21)
+    {
+        wfg1(xst, tam_pos, xst_fitness, i);
+    }
+    if(func_n[0] == 31)
+    {
+        mw1(xst, tam_pos, xst_fitness, i, alpha);
+    }
+    if(func_n[0] == 32)
+    {
+        mw2(xst, tam_pos, xst_fitness, i, alpha);
+    }
+    if(func_n[0] == 33)
+    {
+        mw3(xst, tam_pos, xst_fitness, i, alpha);
+    }
+    if(func_n[0] == 34)
+    {
+        mw4(xst, tam_pos, xst_fitness, i, alpha);
+    }
+    if(func_n[0] == 35)
+    {
+        mw5(xst, tam_pos, xst_fitness, i, alpha);
+    }
+    if(func_n[0] == 36)
+    {
+        mw6(xst, tam_pos, xst_fitness, i, alpha);
+    }
+    if(func_n[0] == 37)
+    {
+        mw7(xst, tam_pos, xst_fitness, i, alpha);
+    }
+    if(func_n[0] == 39)
+    {
+        mw9(xst, tam_pos, xst_fitness, i, alpha);
+    }
+    if(func_n[0] == 310)
+    {
+        mw10(xst, tam_pos, xst_fitness, i, alpha);
+    }
 
-
-        if(secondary_params[0] == 1)
+//     verificar se xst domina a particula i
+    if(a_dominate_b(xst_fitness+(i*tam_fit[0]), fitness+(i*tam_fit[0]), tam_fit[0], maximize))
+    {
+        xst_dominate[i] = 1;
+        for(j=0;j<tam_pos[0];j++)
         {
-//             printf("sim %d\n", i);
-            //             fit_eval = self.fitness_evaluation(self.fitness_function,Xst)
-            //             Xst_fit = fit_eval[0]
-        }
-        else
-        {
-//             printf("\nnao %d %d %d %d\n", i, i*tam_fit[0], xst_fitness+(i*tam_fit[0]), xst_fitness+(i*tam_fit[0]+1));
-            //             Xst_fit = self.fitness_evaluation(self.fitness_function,Xst)
-            if(func_n[0]==11)
-            {
-                zdt1_device(xst, tam_pos, xst_fitness, i);
-            }
-            if(func_n[0]==12)
-            {
-                zdt2_device(xst, tam_pos, xst_fitness, i);
-            }
-            if(func_n[0]==13)
-            {
-                zdt3_device(xst, tam_pos, xst_fitness, i);
-            }
-            if(func_n[0]==14)
-            {
-                zdt4_device(xst, tam_pos, xst_fitness, i);
-            }
-            if(func_n[0]==15)
-            {
-                zdt5(xst, tam_pos, xst_fitness, i);
-            }
-            if(func_n[0]==16)
-            {
-                zdt6(xst, tam_pos, xst_fitness, i);
-            }
-            if(func_n[0]==1)
-            {
-                dtlz1(xst, tam_pos, xst_fitness, i);
-            }
-            if(func_n[0]==2)
-            {
-                dtlz2(xst, tam_pos, xst_fitness, i);
-            }
-            if(func_n[0]==3)
-            {
-                dtlz3(xst, tam_pos, xst_fitness, i);
-            }
-            if(func_n[0]==4)
-            {
-                dtlz4(xst, tam_pos, xst_fitness, i);
-            }
-            if(func_n[0]==5)
-            {
-                dtlz5(xst, tam_pos, xst_fitness, i);
-            }
-            if(func_n[0]==6)
-            {
-                dtlz6(xst, tam_pos, xst_fitness, i);
-            }
-            if(func_n[0]==7)
-            {
-                dtlz7(xst, tam_pos, xst_fitness, i);
-            }
-            if(func_n[0] == 21)
-            {
-                wfg1(xst, tam_pos, xst_fitness, i);
-            }
-            if(func_n[0] == 31)
-            {
-                mw1(xst, tam_pos, xst_fitness, i, alpha);
-            }
-            if(func_n[0] == 32)
-            {
-                mw2(xst, tam_pos, xst_fitness, i, alpha);
-            }
-            if(func_n[0] == 33)
-            {
-                mw3(xst, tam_pos, xst_fitness, i, alpha);
-            }
-            if(func_n[0] == 34)
-            {
-                mw4(xst, tam_pos, xst_fitness, i, alpha);
-            }
-            if(func_n[0] == 35)
-            {
-                mw5(xst, tam_pos, xst_fitness, i, alpha);
-            }
-            if(func_n[0] == 36)
-            {
-                mw6(xst, tam_pos, xst_fitness, i, alpha);
-            }
-            if(func_n[0] == 37)
-            {
-                mw7(xst, tam_pos, xst_fitness, i, alpha);
-            }
-            if(func_n[0] == 39)
-            {
-                mw9(xst, tam_pos, xst_fitness, i, alpha);
-            }
-            if(func_n[0] == 310)
-            {
-                mw10(xst, tam_pos, xst_fitness, i, alpha);
-            }
-
-//             if(i==15)
-//             {
-//                 printf("xst fitness %lf %lf\n", xst_fitness[i*tam_fit[0]], xst_fitness[i*tam_fit[0]+1]);
-//             }
-        }
-//         if self.params.secondary_params:
-//             Xst_particle.secondary_params = fit_eval[1:]
-//
-//         pq apenas atualiza a posicao e a avaliação?
-//         if(i==80)
-//         {
-//             for(j=0;j<10;j++)
-//             {
-//                 printf("%lf ",xst[i*tam_pos[0]+j]);
-//             }
-//             printf("\n%d %d %d\n", xr_list[i*5+0], xr_list[i*5+1], xr_list[i*5+2]);
-//             printf("%lf %lf %lf %lf\n",xst_fitness[i*2+0],xst_fitness[i*2+1], fitness[i*2+0], fitness[i*2+1]);
-//         }
-
-
-//         if(i==0)
-//         {
-//             for(j=0;j<tam_fit[0];j++)
-//             {
-//                 printf("%lf ", fitness[j]);
-//             }
-//             printf("\n");
-//         }
-
-        if(a_dominate_b(xst_fitness+(i*tam_fit[0]), fitness+(i*tam_fit[0]), tam_fit[0], maximize))
-        {
-// //             printf("i=%d\n",i);
-            xst_dominate[i] = 1;
-            for(j=0;j<tam_pos[0];j++)
-            {
-                position[i*tam_pos[0]+j] = xst[i*tam_pos[0]+j];
-            }
-
-//             if(i==0)
-//             {
-//                 for(j=0;j<tam_fit[0];j++)
-//                 {
-//                     printf("%lf ", fitness[j]);
-//                 }
-//                 printf("\n");
-//             }
-
-//             if(i<5)
-//             {
-//                 for(j=0;j<tam_pos[0];j++)
-//                 {                                                                ´´´´´§´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´´
-//                     position[(i+2*tam_pop[0])*tam_pos[0]+j] = xst[i*tam_pos[0]+j];
-//                 }
-//             }
-            for(j=0;j<tam_fit[0];j++)
-            {
-                fitness[i*tam_fit[0]+j] = xst_fitness[i*tam_fit[0]+j];
-            }
-
-//             if(i==0)
-//             {
-//                 for(j=0;j<tam_fit[0];j++)
-//                 {
-//                     printf("%lf ", fitness[j]);
-//                 }
-//                 printf("\n");
-//             }
-
-            update_from_differential_mutation[i] = 1;
-
-//             if(i==0)
-//             {
-//                 for(j=0;j<tam_fit[0];j++)
-//                 {
-//                     printf("%lf ", fitness[j]);
-//                 }
-//                 printf("\n");
-//             }
-
-//             update_personal_best4(personal_best_p, personal_best_v, personal_best_f, tam_fit,
-//             tam_pos, position, fitness, personal_guide_array_size, maximize);
-            update_personal_best4_validation(personal_best_p, personal_best_v, personal_best_f, tam_fit,
-            tam_pos, position, fitness, personal_guide_array_size, maximize);
+            position[i*tam_pos[0]+j] = xst[i*tam_pos[0]+j];
         }
 
-//         if(i==0)
-//         {
-//             for(j=0;j<tam_fit[0];j++)
-//             {
-//                 printf("%lf ", fitness[j]);
-//             }
-//             printf("\n");
-//         }
+        for(j=0;j<tam_fit[0];j++)
+        {
+            fitness[i*tam_fit[0]+j] = xst_fitness[i*tam_fit[0]+j];
+        }
 
-//         else
-//         {
-// //             printf("nao");
-//         }
-//         if Xst_particle >> particle:
-//             particle.fitness = Xst_fit
-//             particle.position = Xst
-//             self.update_from_differential_mutation = True
-//             self.update_personal_best(particle)
+        update_from_differential_mutation[i] = 1;
+
+        update_personal_best4_validation(personal_best_p, personal_best_v, personal_best_f, tam_fit,
+        tam_pos, position, fitness, personal_guide_array_size, maximize);
+    }
 }
 
 __global__ void inicialize_front0_mem(int *front, int *front0_mem,
@@ -3766,20 +3406,15 @@ int *current_memory_size)
                 // verificar se sao diferentes
                 for(l=0;l<tam_pos[0];l++)
                 {
-//                     if(j==1 && k==14)
-//                     {
-//                         printf("%0.16lf %0.16lf %0.16lf\n", position[front[k]*tam_pos[0]+l], position[(2*tam_pop[0]+j)*tam_pos[0]+l], position[front[k]*tam_pos[0]+l]-position[(2*tam_pop[0]+j)*tam_pos[0]+l]);
-//                     }
-//                     if(position[front[k]*tam_pos[0]+l] != position[(2*tam_pop[0]+j)*tam_pos[0]+l])
                     if(abs(position[front[k]*tam_pos[0]+l]-position[(2*tam_pop[0]+j)*tam_pos[0]+l])>1e-6)
                     {
                         diff+=1;
-//                         printf("j=%d, k=%d, front[k]=%d, diff=%d\n", j, k, front[k], diff);
                         l = 2*tam_pos[0];
                     }
                 }
             }
-            if(diff == tam[0])
+//             if(diff == tam[0])
+            if(diff == tam_pos[0])
             {
                 front0_mem[tam[0]+m] = (2*tam_pop[0]+j);
                 tam_front0_mem[0]+=1;
@@ -3848,7 +3483,7 @@ __global__ void copy3(double *vector, double *vector2, int *tam)
 __global__ void sigma_eval(double *sigma_value, double *fitness, int *tam)
 {
     // falta implementar maior que 2
-//     int i = threadIdx.x, j;
+
     int i = blockIdx.x*blockDim.x+threadIdx.x, j;
     double denominator = 0;
 
@@ -3880,18 +3515,6 @@ __global__ void sigma_eval(double *sigma_value, double *fitness, int *tam)
         fitness[i*tam[0]] * fitness[i*tam[0]]
         )/denominator;
     }
-//     else
-//     {
-//         //falta implementar
-//         //         else:
-// //             for i in range(self.params.objectives_dim):
-// //                 if i != self.params.objectives_dim-1:
-// //                     numerator.append(squared_power[i] - squared_power[i+1])
-// //                 else:
-// //                     numerator.append(squared_power[i] - squared_power[0])
-// //         sigma = np.divide(numerator, denominator)
-// //         particle.sigma_value = sigma
-//     }
 }
 
 __global__ void sigma_nearest(double *sigma_value, int *front, int *tam_front,
@@ -3900,30 +3523,11 @@ int *rank, int *tam_pop, int *tam_mem, int *tam_fit, int *global_best, double *f
     int i = threadIdx.x, j,p=0, k, different = 0;
     double sigma_distance = 1e20, new_distance=0, temp;
 
-//     if(i==82)
-//     {
-//         printf("rank %d %d\n", i, rank[i]);
-//     }
-//     if(i==19)
-//     {
-//         for(j=0;j<2;j++)
-//         {
-//             printf("%lf ", fitness[i*2+j]);
-//         }
-//         printf("\n");
-//     }
-
-//     printf("i = %d, rank = %d, tam_fit = %d\n", i, rank[i],tam_fit[i]);
     if(rank[i]==0)
     {
-//         printf("i=%d, mem \n",i);
         for(j=0;j<tam_mem[0];j++)
         {
             different = 0;
-//             if(i==19)
-//             {
-//                 printf("%d %lf %lf\n", 256+j, fitness[(256+j)*2+0], fitness[(256+j)*2+1]);
-//             }
             for(k=0;k<tam_fit[0];k++)
             {
                 if(abs(fitness[i*tam_fit[0]+k]- fitness[(2*tam_pop[0]+j)*tam_fit[0]+k]) > 0)
@@ -3960,7 +3564,7 @@ int *rank, int *tam_pop, int *tam_mem, int *tam_fit, int *global_best, double *f
                 temp = sigma_value[i*tam_fit[0]+2]-sigma_value[(2*tam_pop[0]+j)*tam_fit[0]+2];
                 temp *= temp;
                 new_distance += temp;
-                new_distance = sqrtf(new_distance);
+                new_distance = sqrt(new_distance);
 
                 if(new_distance<sigma_distance && different==1)
                 {
@@ -4294,11 +3898,6 @@ double *position_max_value)
     {
         velocity[i*tam_pos+j]*=-1;
     }
-
-//                     if position[i] == self.params.position_min_value[i] and velocity[i] < 0:
-//                     velocity[i] = -1 * velocity[i]
-//                 elif position[i] == self.params.position_max_value[i] and velocity[i] > 0:
-//                     velocity[i] = -1 * velocity[i]
 }
 
 __global__ void nextgen1(int *fronts, int *tam, int *tam_pop)

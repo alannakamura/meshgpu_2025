@@ -1643,11 +1643,7 @@ class MESH:
             prev_fitness_eval = 0
 
             if self.gpu:
-                # if func == 'ZDT1':
-                # zdt1 = self.mod.get_function("zdt1")
                 function = self.mod.get_function("function")
-                # zdt1(self.position_g, self.params.position_dim_g, self.fitness_g,
-                #      block=(self.params.population_size, 1, 1), grid=(1, 1, 1))
                 function(self.params.func_n_g, self.position_g, self.params.position_dim_g,
                          self.fitness_g, self.alpha_g,
                      block=(self.params.population_size, 1, 1), grid=(1, 1, 1))
@@ -1679,13 +1675,18 @@ class MESH:
                 cuda.Context.synchronize()
 
             if self.gpu:
+                # o front0 ser usado para prencher a memoria
+                # se o front 0 for menor que o tamanho da memoria copia ele para a memoria
+                # caso contrario tem que selecionar os melhores com crowding distance
                 tam_fronts = np.zeros(2*self.params.population_size, dtype=np.int32)
                 cuda.memcpy_dtoh(tam_fronts, self.tams_fronts_g)
                 # atualiza memoria pela GPU
                 if tam_fronts[0] <= self.params.memory_size:
 
+                    # o tamanho da memoria atual sera o tamanho do front 0
                     cuda.memcpy_htod(self.params.current_memory_size_g, tam_fronts[0])
 
+                    # copia front 0 para as primeiras posicoes da memoria
                     memory_inicialization1 = self.mod.get_function("memory_inicialization1")
                     memory_inicialization1(self.position_g, self.fitness_g, self.fronts_g,
                                            self.params.position_dim_g, self.params.objectives_dim_g,
@@ -1693,22 +1694,32 @@ class MESH:
                                            block=(int(tam_fronts[0]), 1, 1), grid=(1, 1, 1))
                     cuda.Context.synchronize()
                 else:
+                    # esse trecho nunca e usado se o tamanho da memoria e igual ao da populacao
+
+                    # o tamanho da memoria inicial sera o tamanho maximo
                     cuda.memcpy_htod(self.params.current_memory_size_g, self.params.memory_size)
 
+                    # zera todas as posicoes do vetor crowding distance
                     crowding_distance_inicialization = self.mod.get_function("crowding_distance_inicialization")
                     crowding_distance_inicialization(self.crowding_distance_g,
                                                      block=(2 * self.params.population_size, 1, 1), grid=(1, 1, 1))
                     cuda.Context.synchronize()
+
+
                     teste2 = np.zeros(2 * self.params.population_size, dtype=np.int32)
+
+                    # i_g sera uma variavel em gpu que indica qual dimensao se esta calculando
                     i_g = cuda.mem_alloc(np.array([1], np.int32).nbytes)
                     for i in range(self.params.objectives_dim):
-                        # print(teste3[0:teste[0]])
+                        # ordena o front 0 de acordo com o valor de fitness da dimensao i
                         cuda.memcpy_htod(i_g, np.array([i], dtype=np.int32))
                         front_sort = self.mod.get_function("front_sort")
                         front_sort(self.fronts_g, self.tams_fronts_g, self.fitness_g,
                                    self.params.objectives_dim_g, i_g, self.crowding_distance_g,
                                    block=(1, 1, 1), grid=(1, 1, 1))
                         cuda.Context.synchronize()
+
+
                         crowding_distance = self.mod.get_function("crowding_distance")
                         crowding_distance(self.fronts_g, self.tams_fronts_g, self.fitness_g,
                                           self.params.objectives_dim_g, self.tams_fronts_g, i_g,
@@ -1727,8 +1738,8 @@ class MESH:
 
             while not self.stopping_criteria_reached:
                 # encontra os melhores globais de cada particula
-                if 2 <= self.params.DE_mutation_type <= 4:  # Somente se for necessario na mutação do DE
-                    self.global_best_attribution()  # 0:00:00.000053 de  0:00:58.232154
+                if 2 <= self.params.DE_mutation_type <= 4:
+                    self.global_best_attribution()
 
                 for i, p in enumerate(self.population):  # 0:00:01.215242 de 0:00:45.768188
                     start = dt.now()
@@ -1759,7 +1770,6 @@ class MESH:
                     gpu[0] += (dt.now() - start).total_seconds()
 
                 start = dt.now()
-
                 cpu[1] += (dt.now() - start).total_seconds()
 
                 if self.gpu:
@@ -1807,6 +1817,7 @@ class MESH:
                         block_x = int(tam_front0_mem[0])
                         grid_x = 1
 
+                    # inicializa a matriz de dominacao de front0_mem
                     fast_nondominated_sort4_2 = self.mod.get_function("fast_nondominated_sort4_2")
                     fast_nondominated_sort4_2(self.fitness_g, self.params.objectives_dim_g,
                                             self.domination_counter_g, self.params.population_size_g,
@@ -1836,14 +1847,17 @@ class MESH:
                     cuda.memcpy_dtoh(tam_front0, self.tam_front0_g)
                     if tam_front0[0] <= self.params.memory_size:
                         cuda.memcpy_htod(self.params.current_memory_size_g, tam_front0)
+
+                        # copia posicoes e fitness de front 0, que e o front 0 do conjunto front0_mem
+                        # para vetores auxiliares
                         memory_inicialization2_1 = self.mod.get_function("memory_inicialization2_1")
-                        # try:
                         memory_inicialization2_1(self.position_g, self.fitness_g, self.front0_g,
                                                  self.params.position_dim_g, self.params.objectives_dim_g,
                                                  self.params.population_size_g, self.aux_g, self.aux2_g,
                                                  block=(int(tam_front0[0]), 1, 1), grid=(1, 1, 1))
                         cuda.Context.synchronize()
 
+                        # move para a sprimeiras posicoes da memoria os valores dos vetores auxiliares
                         memory_inicialization2_2 = self.mod.get_function("memory_inicialization2_2")
                         memory_inicialization2_2(self.position_g, self.fitness_g, self.front0_g,
                                                  self.params.position_dim_g, self.params.objectives_dim_g,
@@ -1853,9 +1867,10 @@ class MESH:
                     else:
 
                         # zerar vetor crowding distance
-                        crowding_distance_inicialization = self.mod.get_function("crowding_distance_inicialization")
+                        crowding_distance_inicialization =self.mod.get_function("crowding_distance_inicialization")
                         crowding_distance_inicialization(self.crowding_distance_g,
-                                                         block=(self.params.population_size, 1, 1), grid=(1, 1, 1))
+                                                         block=(self.params.population_size, 1, 1),
+                                                         grid=(1, 1, 1))
                         cuda.Context.synchronize()
 
                         for i in range(self.params.objectives_dim):
@@ -1867,6 +1882,7 @@ class MESH:
                                        block=(1, 1, 1), grid=(1, 1, 1))
                             cuda.Context.synchronize()
 
+                            # calcula crowding_distance relativo a dimensao i
                             crowding_distance = self.mod.get_function("crowding_distance")
                             crowding_distance(self.front0_g, self.tam_front0_g, self.fitness_g,
                                               self.params.objectives_dim_g, self.tams_fronts_g, i_g,
@@ -1874,13 +1890,14 @@ class MESH:
                                               block=(int(tam_front0[0]) - 2, 1, 1),
                                               grid=(1, 1, 1))
 
+                        # ordena o front de acordo com o crowding distance
                         front_sort_crowding_distance = self.mod.get_function("front_sort_crowding_distance")
                         front_sort_crowding_distance(self.front0_g, self.tam_front0_g,
                                                      self.crowding_distance_g,
                                                      block=(1, 1, 1), grid=(1, 1, 1))
 
 
-
+                        # copia a posicao e fitness dos melhores para os vetores auxiliares
                         memory_inicialization2_1 = self.mod.get_function("memory_inicialization2_1")
                         memory_inicialization2_1(self.position_g, self.fitness_g, self.front0_g,
                                                  self.params.position_dim_g, self.params.objectives_dim_g,
@@ -1888,6 +1905,7 @@ class MESH:
                                                  block=(self.params.memory_size, 1, 1), grid=(1, 1, 1))
                         cuda.Context.synchronize()
 
+                        # copia para a memoria os valores dos vetores auxiliares
                         memory_inicialization2_2 = self.mod.get_function("memory_inicialization2_2")
                         memory_inicialization2_2(self.position_g, self.fitness_g, self.front0_g,
                                                  self.params.position_dim_g, self.params.objectives_dim_g,
@@ -1895,103 +1913,17 @@ class MESH:
                                                  block=(self.params.memory_size, 1, 1), grid=(1, 1, 1))
                         cuda.Context.synchronize()
 
+                        cuda.memcpy_htod(self.params.current_memory_size_g, self.params.memory_size)
+
                     gpu[1] += (dt.now() - start).total_seconds()
 
-                    # teste
-                    # teste_cur = np.zeros(1, np.int32)
-                    # cuda.memcpy_dtoh(teste_cur, self.params.current_memory_size_g)
-                    # teste_f = np.zeros(384 * 2, np.float64)
-                    # cuda.memcpy_dtoh(teste_f, self.fitness_g)
-                    # teste_f.shape = 384, 2
-                    # teste_p = np.zeros(384 * 10, dtype=np.float64)
-                    # cuda.memcpy_dtoh(teste_p, self.position_g)
-                    # teste_p.shape = 384, 10
-                    # # plt.plot(teste_f[:, 0], teste_f[:, 1], 'ro')
-                    # # plt.show()
-                    # pass
-
-                    # teste_nan
-                    # teste_f = np.zeros(384*2, dtype=np.float64)
-                    # cuda.memcpy_dtoh(teste_f, self.fitness_g)
-                    # teste_f.shape = 384, 2
-                    # teste_p = np.zeros(384 * 10, dtype=np.float64)
-                    # cuda.memcpy_dtoh(teste_p, self.position_g)
-                    # teste_p.shape = 384, 10
-                    # a = np.isnan(teste_f)
-                    # a = sum(sum(a))
-                    # if a > 0:
-                    #     print(self.generation_count)
-                    #     a = np.where(np.isnan(teste_f) == True)
-                    #     exit(1)
-
-                    # trecho usado apenas para igualar as duas simulações, apagar depois
-                    # teste = np.zeros(
-                    #     self.params.position_dim * (2 * self.params.population_size
-                    #                                 + self.params.memory_size),
-                    #     dtype=np.float64)
-                    # cuda.memcpy_dtoh(teste, self.position_g)
-                    # teste.shape = 2 * self.params.population_size + self.params.memory_size, self.params.position_dim
-                    # teste2 = np.zeros(
-                    #     self.params.objectives_dim * (2 * self.params.population_size + self.params.memory_size),
-                    #     dtype=np.float64)
-                    # cuda.memcpy_dtoh(teste2, self.fitness_g)
-                    # teste2.shape = 2 * self.params.population_size + self.params.memory_size, self.params.objectives_dim
-                    # if abs(self.memory[0].position[0] - teste[2 * self.params.population_size][0]) > 1e-3:
-                    #     # print("troca2")
-                    #     temp = teste[2 * self.params.population_size].copy()
-                    #     teste[2 * self.params.population_size] = teste[2 * self.params.population_size + 1].copy()
-                    #     teste[2 * self.params.population_size + 1] = temp.copy()
-                    #     temp = teste2[2 * self.params.population_size].copy()
-                    #     teste2[2 * self.params.population_size] = teste2[2 * self.params.population_size + 1].copy()
-                    #     teste2[2 * self.params.population_size + 1] = temp.copy()
-                    # cuda.memcpy_htod(self.position_g, teste.flatten())
-                    # cuda.memcpy_htod(self.fitness_g, teste2.flatten())
-
-                    # teste nova memoria
-                    # print('teste nova memoria depois')
-                    # teste = np.zeros(
-                    #     self.params.position_dim * (2 * self.params.population_size
-                    #                                 + self.params.memory_size),
-                    #     dtype=np.float64)
-                    # cuda.memcpy_dtoh(teste, self.position_g)
-                    # teste.shape = 261, 10
-                    #
-                    # l = []
-                    # for i in range(len(self.memory)):
-                    #     l2 = np.array(self.memory[i].position) - teste[256 + i]
-                    #     l.extend(l2)
-                    # l3 = np.where(abs(np.array(l)) > 1e-4)[0]
-                    # print(l3)
-                    #
-                    # teste2 = np.zeros(
-                    #     self.params.objectives_dim * (2 * self.params.population_size
-                    #                                   + self.params.memory_size),
-                    #     dtype=np.float64)
-                    # cuda.memcpy_dtoh(teste2, self.fitness_g)
-                    # teste2.shape = 261, 2
-                    #
-                    # l = []
-                    # for i in range(len(self.memory)):
-                    #     l2 = np.array(self.memory[i].fitness) - teste2[256 + i]
-                    #     l.extend(l2)
-                    # l3 = np.where(abs(np.array(l)) > 1e-4)[0]
-                    # print(l3)
-                    # if self.generation_count==7:
-                    #     pass
 
                 start = dt.now()
-
-                # copia pesos testeTempo250624 particulas
-                # if self.copy_pop:  # 0:00:13.549243 de 0:01:01.481072 22,02%
-                #     self.population_copy = copy.deepcopy(self.population)
-                #     self.weights_copy = copy.deepcopy(self.weights)
-
                 cpu[2] += (dt.now() - start).total_seconds()
+
                 start = dt.now()
 
                 if self.gpu:
-                    # # teste - copiar mesmo teste depois da copia
-                    # print('posicoes antes copia')
 
                     # copia de position
                     div = int(self.params.population_size/64)
@@ -2001,48 +1933,11 @@ class MESH:
                           grid=(div, 1, 1))
                     cuda.Context.synchronize()
 
-                    # teste
-                    # print('posicoes apos copia')
-                    # teste_pos = np.zeros(261 * 10, dtype=np.float64)
-                    # cuda.memcpy_dtoh(teste_pos, self.position_g)
-                    # teste_pos.shape = 261, 10
-                    # l = []
-                    # for i in range(len(self.population)):
-                    #     for j in range(len(self.population[i].position)):
-                    #         l.append(abs(self.population[i].position[j]-teste_pos[i][j]))
-                    # for i in range(len(self.population_copy)):
-                    #     for j in range(len(self.population_copy[i].position)):
-                    #         l.append(abs(self.population_copy[i].position[j]-teste_pos[i+128][j]))
-                    # l = np.array(l)
-                    # l = np.where(l>1e-5)[0]
-                    # print(l)
-                    # if self.generation_count == 7:
-                    #     pass
-
-                    # teste - copiar mesmo teste depois da copia
-                    # print('fitness antes copia')
-
                     # copia de fitness
                     copy2(self.fitness_g,
                           block=(int(self.params.population_size / div), self.params.objectives_dim, 1),
                           grid=(div, 1, 1))
                     cuda.Context.synchronize()
-
-                    # teste
-                    # print('fitness apos copia')
-                    # teste_fit = np.zeros(261 * 2, dtype=np.float64)
-                    # cuda.memcpy_dtoh(teste_fit, self.fitness_g)
-                    # teste_fit.shape = 261, 2
-                    # l_f = []
-                    # for i in range(len(self.population)):
-                    #     for j in range(len(self.population[i].fitness)):
-                    #         l_f.append(abs(self.population[i].fitness[j] - teste_fit[i][j]))
-                    # for i in range(len(self.population_copy)):
-                    #     for j in range(len(self.population_copy[i].fitness)):
-                    #         l_f.append(abs(self.population_copy[i].fitness[j] - teste_fit[i + 128][j]))
-                    # l_f = np.array(l_f)
-                    # l_f = np.where(l_f > 1e-5)[0]
-                    # print(l_f)
 
                     # copia de rank
                     copy2(self.rank_g,
@@ -2050,30 +1945,11 @@ class MESH:
                           grid=(div, 1, 1))
                     cuda.Context.synchronize()
 
-                    # teste
-                    # print('velocidade antes copia')
-
                     # copia de velocity
                     copy2(self.velocity_g,
                           block=(int(self.params.population_size / div), self.params.position_dim, 1),
                           grid=(div, 1, 1))
                     cuda.Context.synchronize()
-
-                    # teste
-                    # print('velocidade depois copia')
-                    # teste_v = np.zeros(261 * 10, dtype=np.float64)
-                    # cuda.memcpy_dtoh(teste_v, self.velocity_g)
-                    # teste_v.shape = 261, 10
-                    # l2 = []
-                    # for i in range(len(self.population)):
-                    #     for j in range(len(self.population[i].velocity)):
-                    #         l2.append(abs(self.population[i].velocity[j] - teste_v[i][j]))
-                    # for i in range(len(self.population_copy)):
-                    #     for j in range(len(self.population_copy[i].velocity)):
-                    #         l2.append(abs(self.population_copy[i].velocity[j] - teste_v[i + 128][j]))
-                    # l2 = np.array(l2)
-                    # l2 = np.where(l2 > 1e-5)[0]
-                    # print(l2)
 
                     # copia de personal_best
                     # div = 8
@@ -2092,9 +1968,6 @@ class MESH:
                           grid=(div, 1, 1))
                     cuda.Context.synchronize()
 
-                    # teste
-                    # print('weights antes copia')
-
                     # copia de weights
                     # div = 1
                     div = int(self.params.population_size/128)
@@ -2104,72 +1977,24 @@ class MESH:
                           grid=(1, div, 1))
                     cuda.Context.synchronize()
 
-                    # teste
-                    # print('weights depois copia')
-                    # teste_w = np.zeros(6 * 128, dtype=np.float64)
-                    # cuda.memcpy_dtoh(teste_w, self.weights_g)
-                    # teste_w.shape = 6,128
-                    # l3 = []
-                    # for i in range(len(self.weights)):
-                    #     for j in range(len(self.weights[i])):
-                    #         l3.append(abs(self.weights[i][j] - teste_w[i][j]))
-                    # l3 = np.array(l3)
-                    # l3 = np.where(l3 > 1e-5)[0]
-                    # print(l3)
-                    # teste_wc = np.zeros(6 * 128, dtype=np.float64)
-                    # cuda.memcpy_dtoh(teste_wc, self.weights_copy_g)
-                    # teste_wc.shape = 6, 128
-                    # l2 = []
-                    # for i in range(len(self.weights)):
-                    #     for j in range(len(self.weights_copy[i])):
-                    #         l2.append(abs(self.weights_copy[i][j] - teste_wc[i][j]))
-                    # l2 = np.array(l2)
-                    # l2 = np.where(l2 > 1e-5)[0]
-                    # print(l2)
-
                 gpu[2] += (dt.now() - start).total_seconds()
 
-                # teste
-                # teste_cur = np.zeros(1, np.int32)
-                # cuda.memcpy_dtoh(teste_cur, self.params.current_memory_size_g)
-                # teste_f = np.zeros(256 * 3 * 3, np.float64)
-                # cuda.memcpy_dtoh(teste_f, self.fitness_g)
-                # teste_f.shape = 256 * 3, 3
-                # teste_p = np.zeros(384 * 10, dtype=np.float64)
-                # cuda.memcpy_dtoh(teste_p, self.position_g)
-                # teste_p.shape = 384, 10
-                # teste_v = np.zeros(384 * 10, dtype=np.float64)
-                # cuda.memcpy_dtoh(teste_v, self.velocity_g)
-                # teste_v.shape = 384, 10
-                # teste_w = np.zeros(6 * 128, dtype=np.float64)
-                # cuda.memcpy_dtoh(teste_w, self.weights_g)
-                # teste_w.shape = 6, 128
-                # teste_wc = np.zeros(6 * 128, dtype=np.float64)
-                # cuda.memcpy_dtoh(teste_wc, self.weights_copy_g)
-                # teste_wc.shape = 6, 128
-                # # plt.plot(teste_f[:, 0], teste_f[:, 1], 'ro')
-                # # plt.show()
-                # pass
-
                 start = dt.now()
-
-                ## muta os pesos de ambas populacoes - 10%
-                # np.random.seed(0)
-                # self.mutate_weights()  # 0:00:06.260588 de  0:00:50.126215 4,5%
-
                 cpu[3] += (dt.now() - start).total_seconds()
 
                 # para manter a igualdade das implementacoes, simplesmente copiei os novos vetores
                 # mais tarde elembrar de  impleementar essa mutação via gpu
                 if self.gpu:
                     start = dt.now()
-                    # weights = np.zeros(6 * 128, dtype=np.float64)
+
+                    # zera os pesos na gpu
                     weights = np.zeros(6 * self.params.population_size, dtype=np.float64)
                     cuda.memcpy_htod(self.weights_g, weights)
 
                     div = int(self.params.population_size/128)
                     cuda.memcpy_htod(self.seed_g, np.random.randint(0, int(1e9), dtype=np.int32))
 
+                    # cada peso recebe um numero aleatorio de uma distribuição normal de media 0 e std=1
                     mutate_weights = self.mod.get_function("mutate_weights")
                     mutate_weights(self.weights_g, self.seed_g, self.params.population_size_g,
                                    self.params.mutation_rate_g,
@@ -2177,12 +2002,14 @@ class MESH:
                           grid=(1, div, 1))
                     cuda.Context.synchronize()
 
+                    # os pesos de 0 a 3, sao limitados entre 0 e 1
                     mutate_weights2 = self.mod.get_function("mutate_weights2")
                     mutate_weights2(self.weights_g, self.params.population_size_g,
                                    block=(4, int(self.params.population_size/div), 1),
                                    grid=(1, div, 1))
                     cuda.Context.synchronize()
 
+                    # aplica limites aos pesos 4 e 5
                     mutate_weights3 = self.mod.get_function("mutate_weights3")
                     mutate_weights3(self.weights_g, self.params.population_size_g,
                                     block=(int(self.params.population_size), 1, 1),
@@ -2190,6 +2017,7 @@ class MESH:
                     cuda.Context.synchronize()
 
                     #weights copy
+                    # mesmas operacoes para os pesos das copias
                     cuda.memcpy_htod(self.seed_g, np.random.randint(0, int(1e9), dtype=np.int32))
                     mutate_weights(self.weights_copy_g, self.seed_g, self.params.population_size_g,
                                    self.params.mutation_rate_g,
@@ -2207,107 +2035,22 @@ class MESH:
                                     grid=(1, 1, 1))
                     cuda.Context.synchronize()
 
-                    # mutate_weights(self.weights_copy_g,
-                    #                block=(6, int(self.params.population_size), 1),
-                    #                grid=(1, 1, 1))
-                    # cuda.Context.synchronize()
-
-                    #teste
-                    # weights = np.zeros(6 * 128, dtype=np.float64)
-                    # cuda.memcpy_dtoh(weights, self.weights_g)
-                    # weights.shape = 6, 128
-                    # for i in range(6):
-                    #     plt.figure()
-                    #     plt.hist(weights[i])
-                    #     plt.show()
-                    # weights = np.zeros(6 * 128, dtype=np.float64)
-                    # cuda.memcpy_dtoh(weights, self.weights_copy_g)
-                    # weights.shape = 6, 128
-                    # for i in range(6):
-                    #     plt.figure()
-                    #     plt.hist(weights[i])
-                    #     plt.show()
-                    #
-                    # pass
-
-                    # weights = np.zeros(6 * 128, dtype=np.float64)
-                    # cuda.memcpy_dtoh(weights, self.weights_copy_g)
-                    # # weights.shape = 6, 128
-                    # print(sum(np.bitwise_and(weights > -2, weights < 2)) / (128 * 6))
-                    # print(sum(np.bitwise_and(weights > -3, weights < 3)) / (128 * 6))
-                    # plt.subplot(2, 2, 3)
-                    # plt.hist(weights)
-                    # plt.show()
-
-                    # cuda.memcpy_htod(self.weights_g, self.weights.astype(np.float64).flatten())
-                    # cuda.memcpy_htod(self.weights_copy_g, self.weights_copy.astype(np.float64).flatten())
-
                     gpu[3] += (dt.now() - start).total_seconds()
-                    # cuda.memcpy_htod(self.position_g, teste.flatten())
-                    # cuda.memcpy_htod(self.fitness_g, teste2.flatten())
-
-                # teste
-                # print('teste apos mutacao pesos')
-                # teste = np.zeros(6 * 128, dtype=np.float64)
-                # cuda.memcpy_dtoh(teste, self.weights_g)
-                # teste.shape = 6, 128
-                # l = []
-                # for i in range(len(self.weights)):
-                #     for j in range(len(self.weights[i])):
-                #         l.append(abs(self.weights[i][j] - teste[i][j]))
-                # l = np.array(l)
-                # l = np.where(l > 1e-5)[0]
-                # print('teste weigths', l)
-                #
-                # teste = np.zeros(6 * 128, dtype=np.float64)
-                # cuda.memcpy_dtoh(teste, self.weights_copy_g)
-                # teste.shape = 6, 128
-                # l = []
-                # for i in range(len(self.weights)):
-                #     for j in range(len(self.weights[i])):
-                #         l.append(abs(self.weights_copy[i][j] - teste[i][j]))
-                # l = np.array(l)
-                # l = np.where(l > 1e-5)[0]
-                # print('teste weights copia', l)
-                # if self.generation_count == 7:
-                #     pass
 
                 start = dt.now()
-                ## Atualizar melhores globais. 17.45 de 47.22 testeTempo250624 0:00:17.199883 de 0:00:45.820871 37,53%
-                # if self.copy_pop:
-                #     self.global_best_attribution(True)
-                #     # self.global_best_attribution_gpu(True)
-                # else:
-                #     self.global_best_attribution()
-
                 cpu[4] += (dt.now() - start).total_seconds()
+
                 start = dt.now()
 
                 if self.gpu:
+                    # calculo do global_best
+                    # calculo do sigma da particula i
                     div = int(np.ceil((self.params.population_size * 2 + self.params.memory_size)/512))
                     sigma_eval = self.mod.get_function("sigma_eval")
                     sigma_eval(self.sigma_g, self.fitness_g, self.params.objectives_dim_g,
                                block=(int((self.params.population_size * 2 + self.params.memory_size)/div), 1, 1),
                                grid=(div, 1, 1))
                     cuda.Context.synchronize()
-
-                    # teste sigma
-                    # print('teste sigma')
-                    # teste_s = np.zeros(261 * 2, dtype=np.float64)
-                    # cuda.memcpy_dtoh(teste_s, self.sigma_g)
-                    # teste_s.shape = 261, 2
-                    # l2 = []
-                    # for i in range(len(self.population)):
-                    #     l2.append(abs(self.population[i].sigma_value - teste_s[i][0]))
-                    # for i in range(len(self.population_copy)):
-                    #     l2.append(abs(self.population_copy[i].sigma_value - teste_s[i + 128][0]))
-                    # for i in range(len(self.memory)):
-                    #     l2.append(abs(self.memory[i].sigma_value - teste_s[i + 256][0]))
-                    # l2 = np.array(l2)
-                    # l2 = np.where(l2 > 1e-5)[0]
-                    # print(l2)
-                    # if self.generation_count == 7:
-                    #     pass
 
                     sigma_nearest = self.mod.get_function("sigma_nearest")
                     sigma_nearest(self.sigma_g, self.fronts_g, self.tams_fronts_g, self.rank_g,
@@ -2317,275 +2060,19 @@ class MESH:
                                   grid=(1, 1, 1))
                     cuda.Context.synchronize()
 
-                    # teste fronts
-                    # f = []
-                    # for k in self.fronts:
-                    #     l2 = []
-                    #     for i in k:
-                    #         for j in range(len(self.population)):
-                    #             if self.population[j] == i:
-                    #                 l2.append(j)
-                    #                 break
-                    #     l2.sort()
-                    #     f.extend(l2)
-                    # teste_front = np.zeros(128, dtype=np.int32)
-                    # cuda.memcpy_dtoh(teste_front, self.fronts_g)
-                    # teste_tf = np.zeros(128, dtype=np.int32)
-                    # cuda.memcpy_dtoh(teste_tf, self.tams_fronts_g)
-
-                    # retirar depois. Em alguns casos particulas com a mesma distancia sigma eram escolhidos
-                    # teste global_best
-                    # de forma diferente pela cpu testeTempo250624 gpu. Nesses casos foia dotado o da gpu para validacao
-                    # print('teste global best')
-                    # # teste_f = np.zeros(261*2, dtype=np.float64)
-                    # # cuda.memcpy_dtoh(teste_f, self.fitness_g)
-                    # # teste_f.shape = 261, 2
-                    # teste_g = np.zeros(261, dtype=np.int32)
-                    # cuda.memcpy_dtoh(teste_g, self.global_best_g)
-                    # l2 = []
-                    # for i in range(len(self.population)):
-                    #     if self.population[i].rank == 0:
-                    #         l2.append(np.where(np.array(self.memory) == self.population[i].global_best)[0][0])
-                    #         l2[-1] += 256
-                    #     else:
-                    #         l2.append(np.where(np.array(self.population) == self.population[i].global_best)[0][0])
-                    # for i in range(len(self.population_copy)):
-                    #     if self.population_copy[i].rank == 0:
-                    #         l2.append(np.where(np.array(self.memory) == self.population_copy[i].global_best)[0][0])
-                    #         l2[-1] += 256
-                    #     else:
-                    #         l2.append(np.where(np.array(self.population) == self.population_copy[i].global_best)[0][0])
-                    # # print(l2 - teste_g[:256])
-                    # # print(np.where((l2 - teste_g[:256]) != 0))
-                    # l3 = np.where((l2 - teste_g[:256]) != 0)[0]
-                    # if len(l3) > 0 :
-                    #     print(l3)
-                    #     teste_s = np.zeros(261 * 2, dtype=np.float64)
-                    #     cuda.memcpy_dtoh(teste_s, self.sigma_g)
-                    #     teste_s.shape = 261, 2
-                    #     for i in l3:
-                    #         a = teste_g[i]
-                    #         a = teste_s[a]
-                    #         # b = np.where((np.array(self.population) == self.population[82].global_best)==True)[0][0]
-                    #         if i<128:
-                    #             b = self.population[i].global_best.sigma_value
-                    #             if abs(b - a[0]) < 1e-5:
-                    #                 try:
-                    #                     b = \
-                    #                     np.where((np.array(self.population) == self.population[i].global_best) == True)[0][
-                    #                         0]
-                    #                 except IndexError:
-                    #                     print(b, a, b-a[0], i)
-                    #                 else:
-                    #                     teste_g[i] = b
-                    #         else:
-                    #             b = self.population_copy[i-128].global_best.sigma_value
-                    #             if abs(b-a[0])<1e-5:
-                    #                 try:
-                    #                     b = np.where((np.array(self.population) == self.population_copy[i-128].global_best) == True)[0][
-                    #                         0]
-                    #                 except IndexError:
-                    #                     print(b, a, b - a[0], i)
-                    #                 else:
-                    #                     teste_g[i] = b
-                    #     cuda.memcpy_htod(self.global_best_g, teste_g)
-                    #
-                    #     print('teste global best apos troca')
-                    #     teste_g = np.zeros(261, dtype=np.int32)
-                    #     cuda.memcpy_dtoh(teste_g, self.global_best_g)
-                    #     l2 = []
-                    #     for i in range(len(self.population)):
-                    #         if self.population[i].rank == 0:
-                    #             l2.append(np.where(np.array(self.memory) == self.population[i].global_best)[0][0])
-                    #             l2[-1] += 256
-                    #         else:
-                    #             l2.append(np.where(np.array(self.population) == self.population[i].global_best)[0][0])
-                    #     for i in range(len(self.population_copy)):
-                    #         if self.population_copy[i].rank == 0:
-                    #             l2.append(np.where(np.array(self.memory) == self.population_copy[i].global_best)[0][0])
-                    #             l2[-1] += 256
-                    #         else:
-                    #             l2.append(
-                    #                 np.where(np.array(self.population) == self.population_copy[i].global_best)[0][0])
-                    #     # print(l2 - teste_g[:256])
-                    #     print(np.where((l2 - teste_g[:256]) != 0)[0])
-                    # else:
-                    #     print(l3)
-                    # pass
-
                 gpu[4] += (dt.now() - start).total_seconds()
 
-                # if self.generation_count == 7:
-                #     pass
-                # teste pb
-                # print('\nteste antes pb move')
-                # teste = np.zeros(261 * 30, dtype=np.float64)
-                # cuda.memcpy_dtoh(teste, self.personal_best_position_g)
-                # teste.shape = 261, 3, 10
-                # teste2 = np.zeros(261 * 6, dtype=np.float64)
-                # cuda.memcpy_dtoh(teste2, self.personal_best_fitness_g)
-                # teste2.shape = 261, 3, 2
-                # teste3 = np.zeros(261 * 10, dtype=np.float64)
-                # cuda.memcpy_dtoh(teste3, self.position_g)
-                # teste3.shape = 261, 10
-                # teste4 = np.zeros(261 * 2, dtype=np.float64)
-                # cuda.memcpy_dtoh(teste4, self.fitness_g)
-                # teste4.shape = 261, 2
-                # if self.generation_count == 7:
-                #     pass
-                #
-                # l = []
-                # l3 = []
-                # for i in range(len(self.population)):
-                #     for j in range(len(self.population[i].personal_best)):
-                #         l2 = []
-                #         for k in range(3):
-                #             l2.append(
-                #                 list(abs(np.array(self.population[i].personal_best[j].position) - teste[i][k])))
-                #         l2.sort()
-                #         l.extend(l2[0])
-                #         l3.append((i, j))
-                # l2 = np.where(abs(np.array(l)) > 1e-4)[0]
-                # print(l2)
-                #
-                # num = []
-                # for i in range(len(self.population)):
-                #     num.append(0)
-                #     for j in range(3):
-                #         if teste[i][j][0] != 1e10:
-                #             num[-1] += 1
-                #     num[-1] -= len(self.population[i].personal_best)
-                # print(np.where(np.array(num) != 0)[0])
-                #
-                # if self.generation_count == 7:
-                #     pass
-                #
-                # l = []
-                # for i in range(len(self.population)):
-                #     for j in range(len(self.population[i].personal_best)):
-                #         l2 = []
-                #         for k in range(3):
-                #             l2.append(
-                #                 list(abs(np.array(self.population[i].personal_best[j].fitness) - teste2[i][k])))
-                #         l2.sort()
-                #         l.extend(l2[0])
-                #         l3.append((i, j))
-                # l2 = np.where(abs(np.array(l)) > 1e-4)[0]
-                # print(l2)
-                #
-                # l = []
-                # for i in range(len(self.population)):
-                #     l2 = abs(np.array(self.population[i].position) - teste3[i])
-                #     l.extend(l2)
-                # l2 = np.where(abs(np.array(l)) > 1e-4)[0]
-                # print(l2)
-                #
-                # l = []
-                # for i in range(len(self.population)):
-                #     l2 = abs(np.array(self.population[i].fitness) - teste4[i])
-                #     l.extend(l2)
-                # l2 = np.where(abs(np.array(l)) > 1e-4)[0]
-                # print(l2)
-                #
-                # l = []
-                # l3 = []
-                # for i in range(len(self.population_copy)):
-                #     for j in range(len(self.population_copy[i].personal_best)):
-                #         l2 = []
-                #         for k in range(3):
-                #             l2.append(
-                #                 list(
-                #                     abs(np.array(self.population_copy[i].personal_best[j].position) - teste[i + 128][
-                #                         k])))
-                #         l2.sort()
-                #         l.extend(l2[0])
-                #         l3.append((i, j))
-                # l2 = np.where(abs(np.array(l)) > 1e-4)[0]
-                # print(l2)
-                # if self.generation_count == 7:
-                #     pass
-                #
-                # l = []
-                # for i in range(len(self.population_copy)):
-                #     for j in range(len(self.population_copy[i].personal_best)):
-                #         l2 = []
-                #         for k in range(3):
-                #             l2.append(
-                #                 list(
-                #                     abs(np.array(self.population_copy[i].personal_best[j].fitness) - teste2[i + 128][
-                #                         k])))
-                #         l2.sort()
-                #         l.extend(l2[0])
-                #         l3.append((i, j))
-                # l2 = np.where(abs(np.array(l)) > 1e-4)[0]
-                # print(l2)
-                #
-                # l = []
-                # for i in range(len(self.population_copy)):
-                #     l2 = abs(np.array(self.population_copy[i].position) - teste3[i + 128])
-                #     l.extend(l2)
-                # l2 = np.where(abs(np.array(l)) > 1e-4)[0]
-                # print(l2)
-                #
-                # l = []
-                # for i in range(len(self.population_copy)):
-                #     l2 = abs(np.array(self.population_copy[i].fitness) - teste4[i + 128])
-                #     l.extend(l2)
-                # l2 = np.where(abs(np.array(l)) > 1e-4)[0]
-                # print(l2)
-                # if self.generation_count == 7:
-                #     pass
-
                 start = dt.now()
-
-                ## Aplica movimento em todas particulas 0:00:00.828291 de 0:00:58.617058 1,39%
-                # for i, p in enumerate(self.population):
-                #     if i == 7:
-                #         self.move_particle(p, i, False)
-                #     else:
-                #         self.move_particle(p, i, False)
-                #     if i == 29:
-                #         #desfazer a alteracao depois na dominacao, para disconsiderar diferenças
-                #         # abaixo de 1e-6
-                #         self.update_personal_best(p)
-                #     else:
-                #         self.update_personal_best(p)
-                #
-                # if self.copy_pop:
-                #     for i, p in enumerate(self.population_copy):
-                #         if i == 7:
-                #             self.move_particle(p, i, True)
-                #         else:
-                #             self.move_particle(p, i, True)
-                #         self.update_personal_best(p)
-
                 cpu[5] += (dt.now() - start).total_seconds()
+
                 start = dt.now()
 
                 if self.gpu:
                     # div = 2
                     div = int(self.params.population_size/64)
-                    # cuda.memcpy_htod(self.whatPersonal_g, self.whatPersonal)
-                    # cuda.memcpy_htod(self.communication_g, self.communication)
-                    # cuda.memcpy_htod(self.cooperation_rand_g, self.cooperation_rand)
-                    # teste2 = np.zeros(261, dtype=np.float64)
-                    # cuda.memcpy_dtoh(teste2, self.cooperation_rand_g)
-                    # print(teste2[:5])
-                    # print(self.cooperation_rand[:5])
-                    # pass
 
                     cuda.memcpy_htod(self.seed_g, np.random.randint(0, int(1e9), dtype=np.int32))
-                    # move_particle = self.mod.get_function("move_particle")
-                    # move_particle(self.weights_g, self.weights_copy_g, self.personal_best_position_g,
-                    #               self.position_g, self.velocity_g, self.whatPersonal_g,
-                    #               self.params.personal_guide_array_size_g,
-                    #               self.communication_g, self.cooperation_rand_g,
-                    #               self.params.communication_probability_g,
-                    #               self.global_best_g, self.params.velocity_max_value_g,
-                    #               self.params.velocity_min_value_g, self.seed_g,
-                    #               block=(int(self.params.population_size / div), self.params.position_dim, 1),
-                    #               grid=(div, 1, 1))
-                    # cuda.Context.synchronize()
+
                     move_particle = self.mod.get_function("move_particle")
                     move_particle(self.weights_g, self.weights_copy_g, self.personal_best_position_g,
                                   self.position_g, self.velocity_g,
@@ -2597,6 +2084,7 @@ class MESH:
                                   grid=(div, 1, 1))
                     cuda.Context.synchronize()
 
+                    # define limites apos o movimento das posicoes e velocidades
                     div *= 2
                     move_particle2 = self.mod.get_function("move_particle2")
                     move_particle2(self.position_g, self.velocity_g, self.params.position_min_value_g,
