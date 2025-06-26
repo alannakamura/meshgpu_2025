@@ -1977,7 +1977,7 @@ __global__ void front_sort5_par(double *fitness, int *dim_fitness, int *i,
 double *crowd_distance, int *tam_pop, int *index)
 {
     int temp;
-    double temp2;
+//     double temp2;
     int j = threadIdx.x*2;
 
     if(fitness[index[j]*dim_fitness[0]+i[0]]>fitness[index[j+1]*dim_fitness[0]+i[0]])
@@ -1986,9 +1986,10 @@ double *crowd_distance, int *tam_pop, int *index)
                 temp = index[j];
                 index[j] = index[j+1];
                 index[j+1] = temp;
-                temp2 = crowd_distance[j];
-                crowd_distance[j] = crowd_distance[j+1];
-                crowd_distance[j+1] = temp2;
+//                 testar depois
+//                 temp2 = crowd_distance[j];
+//                 crowd_distance[j] = crowd_distance[j+1];
+//                 crowd_distance[j+1] = temp2;
     }
 }
 
@@ -1996,7 +1997,7 @@ __global__ void front_sort5_impar(double *fitness, int *dim_fitness, int *i,
 double *crowd_distance, int *tam_pop, int *index)
 {
     int temp;
-    double temp2;
+//     double temp2;
     int j = threadIdx.x*2+1;
 
     if(fitness[index[j]*dim_fitness[0]+i[0]]>fitness[index[j+1]*dim_fitness[0]+i[0]])
@@ -2005,23 +2006,21 @@ double *crowd_distance, int *tam_pop, int *index)
                 temp = index[j];
                 index[j] = index[j+1];
                 index[j+1] = temp;
-                temp2 = crowd_distance[j];
-                crowd_distance[j] = crowd_distance[j+1];
-                crowd_distance[j+1] = temp2;
+//                 testar depois
+//                 temp2 = crowd_distance[j];
+//                 crowd_distance[j] = crowd_distance[j+1];
+//                 crowd_distance[j+1] = temp2;
     }
 }
 
 __global__ void front_sort_crowding_distance(int* front, int *dim, double *crowding_distance)
 {
     int j, k, temp;
-//     int p1, p2;
     double temp2;
     for(j=0;j<dim[0]-1;j++)
     {
         for(k=j+1;k<dim[0];k++)
         {
-//             p1 = front[j];
-//             p2 = front[k];
             if(crowding_distance[j]<crowding_distance[k] ||
              (crowding_distance[j]==crowding_distance[k] && front[j]>front[k]))
             {
@@ -2099,8 +2098,6 @@ __global__ void front_sort_crowding_distance3(int* front, int *dim, double *crow
 __global__ void front_sort_crowding_distance4(int* front, int *dim, double *crowding_distance, int *tam_pop)
 {
     int j=0, k, inicio=0, temp;
-//     int p1, p2;
-//     double temp2;
     int tam = dim[dim[tam_pop[0]-2]];
 
     while(j<dim[tam_pop[0]-2])
@@ -2108,21 +2105,16 @@ __global__ void front_sort_crowding_distance4(int* front, int *dim, double *crow
         inicio+=dim[j];
         j++;
     }
-//     printf("ini = %d %d\n",inicio, tam);
+
     for(j=0;j<tam-1;j++)
     {
         for(k=j+1;k<tam;k++)
         {
-//             p1 = front[j];
-//             p2 = front[k];
             if(crowding_distance[front[inicio+j]]<crowding_distance[front[inicio+k]])
             {
                 temp = front[inicio+j];
                 front[inicio+j] = front[inicio+k];
                 front[inicio+k] = temp;
-//                 temp2 = crowding_distance[front[inicio+j];
-//                 crowding_distance[inicio+j] = crowding_distance[inicio+k];
-//                 crowding_distance[inicio+k] = temp2;
             }
         }
     }
@@ -2200,32 +2192,19 @@ __global__ void crowding_distance3(int* front, int *dim, double *fitness,
 __global__ void crowding_distance4(double *fitness,
  int *dim_fitness, int *tam_front, int *i, double *crowd_distance, int *tam_pop, int *index)
 {
+    // os indices variam de 0 a tam_pop-2
+    // os crwoding distance sao calculados de 1 a tam_pop-2, ja que os extremso sao infinitos
     int j = threadIdx.x, next, prev, first, last;
 
     next = index[j+2];
     prev = index[j];
     first = index[0];
-//     last = index[tam_pop[0]-1];
     last = index[2*tam_pop[0]-1];
-//     crowd_distance[0] = 1e20;
-//     crowd_distance[tam_pop[0]-1] = 1e20;
+
     crowd_distance[first] = 1e20;
     crowd_distance[last] = 1e20;
     if(crowd_distance[index[j+1]]!=1e20)
     {
-//             if((j+1)==1)
-//             {
-//                 printf("teste cd %d %d %lf %lf %lf %lf\n",j,i[0],
-//                 fitness[next*dim_fitness[0]+i[0]],
-//                 fitness[prev*dim_fitness[0]+i[0]],
-//                 fitness[last*dim_fitness[0]+i[0]],
-//                 fitness[first*dim_fitness[0]+i[0]]);
-//                 printf("teste cd2 %d %d %d %d %d %d\n",j,i[0],
-//                 next,
-//                 prev,
-//                 last,
-//                 first);
-//             }
         crowd_distance[index[j+1]] += (fitness[next*dim_fitness[0]+i[0]] - fitness[prev*dim_fitness[0]+i[0]])/
         (fitness[last*dim_fitness[0]+i[0]] - fitness[first*dim_fitness[0]+i[0]]);
     }
@@ -3430,16 +3409,13 @@ int *current_memory_size)
 {
     int j;
     tam_front0_mem[0] = 0;
-//     printf("tam = %d\n", tam_front0_mem[0]);
+
     for(j=0;j<tam[0];j++)
     {
-//         front0_mem[j] = j;
         front0_mem[j] = front[j];
         tam_front0_mem[0]+=1;
     }
-//     printf("tam = %d\n", tam_front0_mem[0]);
-//     printf("tam = %d, cur = %d, tam = %d\n", tam[0], current_memory_size[0], tam_front0_mem[0]);
-//     for(j=0;j<tam_mem[0];j++)
+
     for(j=0;j<current_memory_size[0];j++)
     {
         if(position[(2*tam_pop[0]+j)*tam_pos[0]]!=-1e20)
@@ -3447,10 +3423,7 @@ int *current_memory_size)
             front0_mem[tam[0]+j] = (2*tam_pop[0]+j);
             tam_front0_mem[0]+=1;
         }
-//         printf("j = %d, tam = %d\n", j, tam_front0_mem[0]);
     }
-//     printf("tam = %d\n", tam_front0_mem[0]);
-//     printf("tam = %d, cur = %d, tam = %d\n", tam[0], current_memory_size[0], tam_front0_mem[0]);
 }
 
 __global__ void copy(double *vector)
@@ -3902,18 +3875,20 @@ double *position_max_value)
 
 __global__ void nextgen1(int *fronts, int *tam, int *tam_pop)
 {
-    int total=0,i=0;
+    int total=0,  i=0;
     while((total+tam[i])<=tam_pop[0])
     {
         total+=tam[i];
-//         printf("%d %d %d %d\n",total,i, tam_pop[0], tam[i]);
         i++;
     }
 //     printf("%d %d %d %d\n",total,i, tam_pop[0], tam[i]);
     //numero do front que sera usado oc rowding distance
     tam[tam_pop[0]-2] = i;
+
     //numero de particulas ate o front a ser analisado
     tam[tam_pop[0]-1] = tam_pop[0]-total;
+    // acheie stranho e vou testar - 260625
+    //     tam[tam_pop[0]-1] = total;
 }
 
 __global__ void population_index_inicialization(int *index)

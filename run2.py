@@ -139,7 +139,7 @@ for func_n in [int(problem)]:
         MCDEEPSO = MESH(params, func, max_num_iters=max_num_iters, alpha=alpha)
         MCDEEPSO.log_memory = f"result/{config}C1_{i}-{optimisationMap[func_n]}-{objectives_dim}obj-"
 
-        cpu, gpu = MCDEEPSO.run(func_name,False, False)
+        gpu = MCDEEPSO.run(func_name,False, False)
         gpu2 = (dt.now() - start).total_seconds()
 
         f = open('results.pkl', 'rb')
@@ -147,7 +147,6 @@ for func_n in [int(problem)]:
         f.close()
 
         f = open('results.pkl', 'wb')
-        results['cpu'].append(sum(cpu))
         results['gpu'].append(sum(gpu))
         results['gpu2'].append(gpu2)
         pickle.dump(results, f)
