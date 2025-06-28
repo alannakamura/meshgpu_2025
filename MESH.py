@@ -1240,6 +1240,9 @@ class MESH:
             self.update_from_differential_mutation = True
             self.update_personal_best(particle)
             pass
+
+
+
         # else:
         #     self.teste10.append([])
 
@@ -2304,6 +2307,7 @@ class MESH:
                     # atualizar fronts - testar isso depois(260625)
                     div1 = int(self.params.population_size / 16)
                     div2 = int(self.params.population_size / 32)
+                    # print(div1, div2)
 
                     fast_nondominated_sort = self.mod.get_function("fast_nondominated_sort")
                     fast_nondominated_sort(self.fitness_g, self.params.objectives_dim_g,
@@ -2313,18 +2317,37 @@ class MESH:
                                            grid=(div1, div2, 1))
                     cuda.Context.synchronize()
 
+                    # tam_front = np.zeros(256, dtype=np.int32)
+                    # cuda.memcpy_dtoh(tam_front, self.tams_fronts_g)
+                    # print(tam_front)
+
                     temp = cuda.mem_alloc(np.zeros(1, dtype=np.int32).nbytes)
-                    cuda.memcpy_htod(temp, np.array(2 * self.params.population_size, dtype=np.int32))
+                    cuda.memcpy_htod(temp, np.array(self.params.population_size, dtype=np.int32))
                     fast_nondominated_sort2 = self.mod.get_function("fast_nondominated_sort2")
                     fast_nondominated_sort2(self.domination_counter_g, temp, temp,
                                             block=(self.params.population_size, 1, 1), grid=(1, 1, 1))
                     cuda.Context.synchronize()
+
+                    # tam_front = np.zeros(256, dtype=np.int32)
+                    # cuda.memcpy_dtoh(tam_front, self.tams_fronts_g)
+                    # print(tam_front)
 
                     fast_nondominated_sort3 = self.mod.get_function("fast_nondominated_sort3")
                     fast_nondominated_sort3(self.domination_counter_g, temp, temp, self.fronts_g, self.tams_fronts_g,
                                             self.rank_g,
                                             block=(1, 1, 1), grid=(1, 1, 1))
                     cuda.Context.synchronize()
+
+                    # tam_front = np.zeros(256, dtype=np.int32)
+                    # cuda.memcpy_dtoh(tam_front, self.tams_fronts_g)
+                    # print(tam_front)
+
+                    # tam_front = np.zeros(256, dtype=np.int32)
+                    # cuda.memcpy_dtoh(tam_front, self.tams_fronts_g)
+                    # print(tam_front)
+                    # tam_front = np.zeros(256, dtype=np.int32)
+                    # cuda.memcpy_dtoh(tam_front, self.fronts_g)
+                    # print(tam_front)
 
                     # inicilaiza o vetor front0+memoria
                     inicialize_front0_mem = self.mod.get_function("inicialize_front0_mem")
@@ -2343,6 +2366,8 @@ class MESH:
                     else:
                         block_x = int(tam_front[0])
                         grid_x = 1
+
+                    # print(block_x, grid_x, tam_front)
 
                     # ordena o vetor front0+memoria
                     fast_nondominated_sort4_2 = self.mod.get_function("fast_nondominated_sort4_2")

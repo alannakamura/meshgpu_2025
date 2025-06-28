@@ -2936,15 +2936,15 @@ int *tam_obj, int *tam_pos, double *position, double *fitness, int *personal_gui
     }
 }
 
-__device__ void update_personal_best4_validation(double *personal_best_p, double *personal_best_v, double *personal_best_f,
-int *tam_obj, int *tam_pos, double *position, double *fitness, int *personal_guide_array_size, int *maximize)
+__device__ void update_personal_best4_validation(double *personal_best_p, double *personal_best_v,
+double *personal_best_f, int *tam_obj, int *tam_pos, double *position, double *fitness,
+int *personal_guide_array_size, int *maximize)
 {
     int i = threadIdx.x, j, k;
     int tam1 = personal_guide_array_size[0]*tam_pos[0];
     int tam2 = personal_guide_array_size[0]*tam_obj[0];
     int include=0, dominated=0, full=1;
     short int exist, different, inset=0;
-//     short int follow = 0;
 
     // exist: se a aquela posicao existe uma particula. O indicador 1e10 na posicao 0 indica que nao existe
     // different: indica se o elemento do eprsonal best e diferent da particula atualiza
@@ -2953,31 +2953,19 @@ int *tam_obj, int *tam_pos, double *position, double *fitness, int *personal_gui
 //     dominated = personal_guide_array_size[0];
     for(k=0;k<personal_guide_array_size[0];k++)
     {
-//         if(i==3)
-//         {
-//             printf("%d\n", k);
-//         }
-//         follow = 0;
+        // se existe uma particula nessa posicao na lista de personal best
         if(personal_best_p[i*tam1+k*tam_pos[0]+0] != 1e10)
         {
-//             if(i==3)
-//             {
-//                 printf("%d\n", k);
-//             }
+            // indica que existe uma particula nessa posicao
             exist=1;
+            // inicializa contador que verifica se a particula atual e diferente da particula ness aposicao do
+            //             eprsonal best
             different=0;
             for(j=0;j<tam_pos[0];j++)
             {
-//                 if(i==2)
-//                 {
-//                     printf("j=%d pos=%lf per=%lf\n",j, position[i*tam_pos[0]+j],personal_best_p[i*tam1+k*tam_pos[0]+j]);
-//                 }
                 if(position[i*tam_pos[0]+j]!= personal_best_p[i*tam1+k*tam_pos[0]+j])
                 {
-//                     if(i==2)
-//                     {
-//                         printf("j=%d pos=%lf per=%lf\n",j, position[i*tam_pos[0]+j],personal_best_p[i*tam1+k*tam_pos[0]+j]);
-//                     }
+                    // se for diferente, different recebe 1 quebra o laco
                     different++;
                     break;
                 }
@@ -2988,28 +2976,23 @@ int *tam_obj, int *tam_pos, double *position, double *fitness, int *personal_gui
         {
             exist = 0;
         }
-//         if(i==3)
-//         {
-//             printf("k=%d ex=%d df=%d ins=%d\n", k, exist, different, inset);
-//         }
-//         dominated--;
 
-//         if(i==2)
-//         {
-//             printf("i=%d k=%d exist=%d dif = %d\n",i,k,exist, different);
-//         }
         if(exist==1 && different == 1)
         {
+            // dominated indica se a particle atual e dominada pela particula da lista
             dominated++;
-//             if(i==2)
-//             {
-//                 printf("i=%d k=%d\n",i,k);
-//             }
+
+            // particula da lista nao domina a partocula atual, dominated =0
             if(a_dominate_b(personal_best_f+(i*tam2+k*tam_obj[0]), fitness+(i*tam_obj[0]),
             tam_obj[0], maximize) == 0)
             {
                 dominated--;
             }
+
+            // se a particula nao e dominada, ela pode dominar ou ser do emsmo front.different
+            // se aqui for verdadeiro e ela dominar, colocamos um indicar de vago na posicao da particula
+            // e um indicador de inclusao
+            // se ela nao dominar nao afz nada, include=0
             if(a_dominate_b(fitness+(i*tam_obj[0]), personal_best_f+(i*tam2+k*tam_obj[0]),
             tam_obj[0], maximize))
             {
@@ -3019,24 +3002,12 @@ int *tam_obj, int *tam_pos, double *position, double *fitness, int *personal_gui
                 }
                 include = 1;
             }
-//             if(i==3)
-//             {
-//                 printf("k=%d ex=%d df=%d ins=%d dom=%d inc=%d\n",
-//                  k, exist, different, inset, dominated, include);
-//             }
         }
-//         if(i==3)
-//         {
-//             printf("k=%d ex=%d df=%d ins=%d dom=%d inc=%d\n",
-//              k, exist, different, inset, dominated, include);
-//         }
     }
-//     if(i==2)
-//     {
-//         printf("%d %d %d %d %d\n",i,k, include, follow, dominated);
-//     }
 
     //para validacao. Apagar depois para maior eficiencia
+    // erajeitara para os vagos focarem no final, verificar se e isso pode ser retirado depois 270625
+
     for(k=0; k < personal_guide_array_size[0]-1; k++)
     {
         if(personal_best_p[i*tam1+k*tam_pos[0]] == 1e10)
@@ -3058,19 +3029,12 @@ int *tam_obj, int *tam_pos, double *position, double *fitness, int *personal_gui
         }
     }
 
+    //     include =1, particula domina pelo menos uma da lista
+    // dominated=0, particula nao e dominada por nenhuma
     if((include || !dominated) && inset)
     {
-//         printf("%d\n", i);
         for(k=0;k<personal_guide_array_size[0];k++)
         {
-//             if(i==3)
-//             {
-//                 for(j=0;j<tam_pos[0];j++)
-//                 {
-//                     printf("%lf ", personal_best_p[i*tam1+k*tam_pos[0]+j]);
-//                 }
-//                 printf("%d \n", k);
-//             }
             if(personal_best_p[i*tam1+k*tam_pos[0]+0] == 1e10)
             {
                 full = 0;
@@ -3085,6 +3049,8 @@ int *tam_obj, int *tam_pos, double *position, double *fitness, int *personal_gui
                 break;
             }
         }
+
+        // se estiver cheio, move a lista para a esquerda e add no final
         if(full == 1)
         {
             for(k=0;k<personal_guide_array_size[0]-1;k++)
