@@ -9,13 +9,13 @@ import pandas as pd
 from optimisationMap import *
 
 # name_file = 'results.pkl'if(diff == tam[0])
-# name_file = 'results_1_100sim_50iter_128pop_3posdim_1.0alpha_3060.pkl'
-# name_file = 'results_2_100sim_50iter_128pop_3posdim_1.0alpha_3060.pkl'
-# name_file = 'results_3_100sim_50iter_128pop_3posdim_1.0alpha_3060.pkl'
-# name_file = 'results_4_100sim_50iter_128pop_3posdim_1.0alpha_3060.pkl'
-# name_file = 'results_5_100sim_50iter_128pop_3posdim_1.0alpha_3060.pkl'
-# name_file = 'results_6_100sim_50iter_128pop_3posdim_1.0alpha_3060.pkl'
-name_file = 'results_7_100sim_50iter_128pop_3posdim_1.0alpha_3060.pkl'
+name_file = 'results_1_100sim_50iter_128pop_10posdim_1.0alpha_4060.pkl'
+# name_file = 'results_2_100sim_100iter_128pop_10posdim_1.0alpha_4060.pkl'
+# name_file = 'results_3_100sim_100iter_128pop_10posdim_1.0alpha_4060.pkl'
+# name_file = 'results_4_1sim_1iter_128pop_10posdim_1.0alpha_4060.pkl'
+# name_file = 'results_5_100sim_100iter_128pop_10posdim_1.0alpha_4060.pkl'
+# name_file = 'results_6_100sim_100iter_128pop_10posdim_1.0alpha_4060.pkl'
+# name_file = 'results_7_100sim_100iter_128pop_10posdim_1.0alpha_4060.pkl'
 
 f = open(name_file, 'rb')
 results = pickle.load(f)

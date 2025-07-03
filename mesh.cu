@@ -1298,176 +1298,109 @@ __device__ void wfg1(double *position, int *position_dim, double *fitness, int i
 //     }
 }
 
-__global__ void function(int *func_n, double *position, int *position_dim, double *fitness, double *alpha)
+__global__ void function(int *func_n, double *position, int *position_dim, double *fitness, double *alpha,
+int *population_size)
 {
 //     int i = threadIdx.x;
     int i = blockIdx.x*blockDim.x+threadIdx.x;
 
+    if(i<population_size[0])
+    {
 //     printf("alpha = %lf\n", alpha[0]);
-    if(func_n[0] == 1)
-    {
-        dtlz1(position, position_dim, fitness, i);
-    }
-    if(func_n[0] == 2)
-    {
-        dtlz2(position, position_dim, fitness, i);
-    }
-    if(func_n[0] == 3)
-    {
-        dtlz3(position, position_dim, fitness, i);
-    }
-    if(func_n[0] == 4)
-    {
-        dtlz4(position, position_dim, fitness, i);
-    }
-    if(func_n[0] == 5)
-    {
-        dtlz5(position, position_dim, fitness, i);
-    }
-    if(func_n[0] == 6)
-    {
-        dtlz6(position, position_dim, fitness, i);
-    }
-    if(func_n[0] == 7)
-    {
-        dtlz7(position, position_dim, fitness, i);
-    }
-    if(func_n[0] == 11)
-    {
-        zdt1_device(position, position_dim, fitness, i);
-    }
-    if(func_n[0] == 12)
-    {
-        zdt2_device(position, position_dim, fitness, i);
-    }
-    if(func_n[0] == 13)
-    {
-        zdt3_device(position, position_dim, fitness, i);
-    }
-    if(func_n[0] == 14)
-    {
-        zdt4_device(position, position_dim, fitness, i);
-    }
-    if(func_n[0] == 15)
-    {
-        zdt5(position, position_dim, fitness, i);
-    }
-    if(func_n[0] == 16)
-    {
-        zdt6(position, position_dim, fitness, i);
-    }
-    if(func_n[0] == 21)
-    {
-        wfg1(position, position_dim, fitness, i);
-    }
-    if(func_n[0] == 31)
-    {
-        mw1(position, position_dim, fitness, i, alpha);
-    }
-    if(func_n[0] == 32)
-    {
-        mw2(position, position_dim, fitness, i, alpha);
-    }
-    if(func_n[0] == 33)
-    {
-        mw3(position, position_dim, fitness, i, alpha);
-    }
-    if(func_n[0] == 34)
-    {
-        mw4(position, position_dim, fitness, i, alpha);
-    }
-    if(func_n[0] == 35)
-    {
-        mw5(position, position_dim, fitness, i, alpha);
-    }
-    if(func_n[0] == 36)
-    {
-        mw6(position, position_dim, fitness, i, alpha);
-    }
-    if(func_n[0] == 37)
-    {
-        mw7(position, position_dim, fitness, i, alpha);
-    }
-    if(func_n[0] == 39)
-    {
-        mw9(position, position_dim, fitness, i, alpha);
-    }
-    if(func_n[0] == 310)
-    {
-        mw10(position, position_dim, fitness, i, alpha);
+        if(func_n[0] == 1)
+        {
+            dtlz1(position, position_dim, fitness, i);
+        }
+        if(func_n[0] == 2)
+        {
+            dtlz2(position, position_dim, fitness, i);
+        }
+        if(func_n[0] == 3)
+        {
+            dtlz3(position, position_dim, fitness, i);
+        }
+        if(func_n[0] == 4)
+        {
+            dtlz4(position, position_dim, fitness, i);
+        }
+        if(func_n[0] == 5)
+        {
+            dtlz5(position, position_dim, fitness, i);
+        }
+        if(func_n[0] == 6)
+        {
+            dtlz6(position, position_dim, fitness, i);
+        }
+        if(func_n[0] == 7)
+        {
+            dtlz7(position, position_dim, fitness, i);
+        }
+        if(func_n[0] == 11)
+        {
+            zdt1_device(position, position_dim, fitness, i);
+        }
+        if(func_n[0] == 12)
+        {
+            zdt2_device(position, position_dim, fitness, i);
+        }
+        if(func_n[0] == 13)
+        {
+            zdt3_device(position, position_dim, fitness, i);
+        }
+        if(func_n[0] == 14)
+        {
+            zdt4_device(position, position_dim, fitness, i);
+        }
+        if(func_n[0] == 15)
+        {
+            zdt5(position, position_dim, fitness, i);
+        }
+        if(func_n[0] == 16)
+        {
+            zdt6(position, position_dim, fitness, i);
+        }
+        if(func_n[0] == 21)
+        {
+            wfg1(position, position_dim, fitness, i);
+        }
+        if(func_n[0] == 31)
+        {
+            mw1(position, position_dim, fitness, i, alpha);
+        }
+        if(func_n[0] == 32)
+        {
+            mw2(position, position_dim, fitness, i, alpha);
+        }
+        if(func_n[0] == 33)
+        {
+            mw3(position, position_dim, fitness, i, alpha);
+        }
+        if(func_n[0] == 34)
+        {
+            mw4(position, position_dim, fitness, i, alpha);
+        }
+        if(func_n[0] == 35)
+        {
+            mw5(position, position_dim, fitness, i, alpha);
+        }
+        if(func_n[0] == 36)
+        {
+            mw6(position, position_dim, fitness, i, alpha);
+        }
+        if(func_n[0] == 37)
+        {
+            mw7(position, position_dim, fitness, i, alpha);
+        }
+        if(func_n[0] == 39)
+        {
+            mw9(position, position_dim, fitness, i, alpha);
+        }
+        if(func_n[0] == 310)
+        {
+            mw10(position, position_dim, fitness, i, alpha);
+        }
     }
 }
-
-// __global__ void zdt1(double *position, int *position_dim, double *fitness)
-// {
-//     int i = threadIdx.x, j;
-//     fitness[i*2+0] = position[i*position_dim[0]+0];
-//
-//     fitness[i*2+1] = 0;
-//     for(j=1;j<position_dim[0];j++)
-//     {
-//         fitness[i*2+1] += position[i*position_dim[0]+j];
-//     }
-//     fitness[i*2+1] *= 9;
-//     fitness[i*2+1] /= (position_dim[0]-1);
-//     fitness[i*2+1] += 1;
-//     fitness[i*2+1] *=  1- sqrt(fitness[i*2+0]/fitness[i*2+1]);
-// }
-//
-// __global__ void zdt2(double *position, int *position_dim, double *fitness)
-// {
-//     int i = threadIdx.x, j;
-//     fitness[i*2+0] = position[i*position_dim[0]+0];
-//
-//     fitness[i*2+1] = 0;
-//     for(j=1;j<position_dim[0];j++)
-//     {
-//         fitness[i*2+1] += position[i*position_dim[0]+j];
-//     }
-//     fitness[i*2+1] *= 9;
-//     fitness[i*2+1] /= (position_dim[0]-1);
-//     fitness[i*2+1] += 1;
-//     fitness[i*2+1] *=  1- (fitness[i*2+0]/fitness[i*2+1])*(fitness[i*2+0]/fitness[i*2+1]);
-// }
-//
-// __global__ void zdt3(double *position, int *position_dim, double *fitness)
-// {
-//     int i = threadIdx.x, j;
-//     double pi = 3.141592;
-//     fitness[i*2+0] = position[i*position_dim[0]+0];
-//
-//     fitness[i*2+1] = 0;
-//     for(j=1;j<position_dim[0];j++)
-//     {
-//         fitness[i*2+1] += position[i*position_dim[0]+j];
-//     }
-//     fitness[i*2+1] *= 9;
-//     fitness[i*2+1] /= (position_dim[0]-1);
-//     fitness[i*2+1] += 1;
-//     fitness[i*2+1] *=  1- sqrt(fitness[i*2+0]/fitness[i*2+1]) -
-//     fitness[i*2+0]/fitness[i*2+1] * sinf(10*pi*position[i*position_dim[0]+0]);
-// }
-//
-// __global__ void zdt4(double *position, int *position_dim, double *fitness)
-// {
-//     int i = threadIdx.x, j;
-//     double temp;
-//     double pi = 3.141592;
-//     fitness[i*2+0] = position[i*position_dim[0]+0];
-//
-//     fitness[i*2+1] = 0;
-//     for(j=1;j<position_dim[0];j++)
-//     {
-//         temp = position[i*position_dim[0]+j];
-//         temp *= temp;
-//         temp -= 10*cosf(4*pi*position[i*position_dim[0]+j]);
-//         fitness[i*2+1] += temp;
-//         fitness[i*2+1] += temp;
-//     }
-//     fitness[i*2+1] += 10*(position_dim[0]-1);
-//     fitness[i*2+1] += 1;
-//     fitness[i*2+1] *=  1- sqrt(fitness[i*2+0]/fitness[i*2+1]);
-// }
 
 __device__ int a_dominate_b(double *fitness1, double *fitness2, int dim, int *maximize)
 {
@@ -4066,15 +3999,26 @@ __global__ void population_init(double *position, int *position_dim, int *seed, 
     }
 }
 
-__global__ void init_population(double *position, int *position_dim, int *seed, double *min, double *max)
+__global__ void init_population(double *position, int *position_dim, int *population_size, int *seed, double *min,
+ double *max)
 {
-    int i = threadIdx.x, j;
+//     int i = threadIdx.x, j;
 //     int j = blockIdx.y*blockDim.y+threadIdx.y;
 
+    int i = blockIdx.x*blockDim.x+threadIdx.x;
+    int j = blockIdx.y*blockDim.y+threadIdx.y;
+
     curandState state;
-    curand_init(seed[0], i, 0, &state);
+    curand_init(seed[0], i, j, &state);
 //     printf("%lf %lf\n", min[0], max[0]);
-    for(j=0;j<position_dim[0];j++)
+
+//     for(j=0;j<position_dim[0];j++)
+//     {
+//         position[i*position_dim[0]+j] = curand_uniform(&state);
+//         position[i*position_dim[0]+j] = position[i*position_dim[0]+j]*(max[j]-min[j])+min[j];
+//     }
+
+    if(i < population_size[0] && j < position_dim[0])
     {
         position[i*position_dim[0]+j] = curand_uniform(&state);
         position[i*position_dim[0]+j] = position[i*position_dim[0]+j]*(max[j]-min[j])+min[j];
