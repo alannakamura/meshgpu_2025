@@ -48,9 +48,9 @@ if len(sys.argv) > 1:
 else:
     problem = 4
     max_num_iters = 1
-    population = 128
+    population = 1025
     alpha = -1.0
-    pos_dim = 10
+    pos_dim = 3
 
     f = open('results2.pkl', 'wb')
     results = {'count': -1, 'cpu': [], 'gpu': []}

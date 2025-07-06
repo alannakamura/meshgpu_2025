@@ -1298,15 +1298,14 @@ __device__ void wfg1(double *position, int *position_dim, double *fitness, int i
 //     }
 }
 
-__global__ void function(int *func_n, double *position, int *position_dim, double *fitness, double *alpha,
-int *population_size)
+__global__ void function(int *func_n, double *position, int *position_dim,
+ double *fitness, double *alpha, int *population_size)
 {
 //     int i = threadIdx.x;
     int i = blockIdx.x*blockDim.x+threadIdx.x;
 
     if(i<population_size[0])
     {
-//     printf("alpha = %lf\n", alpha[0]);
         if(func_n[0] == 1)
         {
             dtlz1(position, position_dim, fitness, i);
@@ -3999,17 +3998,16 @@ __global__ void population_init(double *position, int *position_dim, int *seed, 
     }
 }
 
-__global__ void init_population(double *position, int *position_dim, int *population_size, int *seed, double *min,
- double *max)
+__global__ void init_population(double *position, int *position_dim, int *seed, double *min,
+ double *max, int *population_size)
 {
 //     int i = threadIdx.x, j;
 //     int j = blockIdx.y*blockDim.y+threadIdx.y;
-
     int i = blockIdx.x*blockDim.x+threadIdx.x;
     int j = blockIdx.y*blockDim.y+threadIdx.y;
 
     curandState state;
-    curand_init(seed[0], i, j, &state);
+//     curand_init(seed[0], i, 0, &state);
 //     printf("%lf %lf\n", min[0], max[0]);
 
 //     for(j=0;j<position_dim[0];j++)
@@ -4018,7 +4016,8 @@ __global__ void init_population(double *position, int *position_dim, int *popula
 //         position[i*position_dim[0]+j] = position[i*position_dim[0]+j]*(max[j]-min[j])+min[j];
 //     }
 
-    if(i < population_size[0] && j < position_dim[0])
+    curand_init(seed[0], i, j, &state);
+    if(i< population_size[0] && j < position_dim[0])
     {
         position[i*position_dim[0]+j] = curand_uniform(&state);
         position[i*position_dim[0]+j] = position[i*position_dim[0]+j]*(max[j]-min[j])+min[j];
@@ -4073,7 +4072,3 @@ __global__ void mutate_weights3(double *weights, int *tam_pop)
     }
 }
 }
-
-
-
-
