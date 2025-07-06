@@ -115,6 +115,7 @@ class MESH_Params:
 
         self.func_n = func_n
 
+        self.copy = np.array([0], dtype=np.int32)
 
         # alocacao dos parametros na gpu
         self.objectives_dim_g = (
@@ -231,6 +232,9 @@ class MESH_Params:
         self.func_n_g = (
             cuda.mem_alloc(np.array([0], dtype=np.int32).nbytes))
         cuda.memcpy_htod(self.func_n_g,np.array([self.func_n], dtype=np.int32))
+
+        self.copy_g = cuda.mem_alloc(self.copy.nbytes)
+        cuda.memcpy_htod(self.copy_g, self.copy)
 
 class MESH:
     def __init__(self, params, fitness_function, max_num_iters=40, alpha=-1, gpu=True):
@@ -1668,24 +1672,37 @@ class MESH:
                 self.update_personal_best_gpu()
 
             if self.gpu:
-                div = int(self.params.population_size/16)
+                # div = int(self.params.population_size/16)
+                div = int(np.ceil(self.params.population_size / 32))
+
                 fast_nondominated_sort = self.mod.get_function("fast_nondominated_sort")
                 fast_nondominated_sort(self.fitness_g, self.params.objectives_dim_g,
                                        self.domination_counter_g, self.params.population_size_g,
-                                       self.params.otimizations_type_g, self.params.objectives_dim_g,
-                                       block=(16, 32, 1),
-                                       grid=(div, int(div/2), 1))
+                                       self.params.otimizations_type_g,
+                                       # block=(16, 32, 1),
+                                       # grid=(div, int(div/2), 1))
+                                       block=(32, 32, 1),
+                                       grid=(div, div, 1))
                 cuda.Context.synchronize()
+
+                div = int(np.ceil(self.params.population_size / 1024))
 
                 fast_nondominated_sort2 = self.mod.get_function("fast_nondominated_sort2")
                 fast_nondominated_sort2(self.domination_counter_g, self.params.population_size_g,
-                                        self.params.population_size_g,
-                                        block=(self.params.population_size, 1, 1), grid=(1, 1, 1))
+                                        # block=(self.params.population_size, 1, 1), grid=(1, 1, 1))
+                                        block=(int(np.ceil(self.params.population_size/div)), 1, 1),
+                                        grid=(div, 1, 1))
                 cuda.Context.synchronize()
 
                 fast_nondominated_sort3 = self.mod.get_function("fast_nondominated_sort3")
-                fast_nondominated_sort3(self.domination_counter_g, self.params.population_size_g,
-                                        self.params.population_size_g, self.fronts_g, self.tams_fronts_g,
+                # fast_nondominated_sort3(self.domination_counter_g, self.params.population_size_g,
+                #                         self.params.population_size_g, self.fronts_g,
+                #                         self.tams_fronts_g,
+                #                         self.rank_g,
+                fast_nondominated_sort3(self.domination_counter_g,
+                                        self.params.population_size_g,
+                                        self.fronts_g,
+                                        self.tams_fronts_g,
                                         self.rank_g,
                                         block=(1, 1, 1), grid=(1, 1, 1))
                 cuda.Context.synchronize()
@@ -1696,7 +1713,9 @@ class MESH:
                 # caso contrario tem que selecionar os melhores com crowding distance
                 tam_fronts = np.zeros(2*self.params.population_size, dtype=np.int32)
                 cuda.memcpy_dtoh(tam_fronts, self.tams_fronts_g)
+
                 # atualiza memoria pela GPU
+                # extedner depois, já que etria que ter um front0 inicial maior que 1024 pra testar
                 if tam_fronts[0] <= self.params.memory_size:
 
                     # o tamanho da memoria atual sera o tamanho do front 0
@@ -1758,6 +1777,8 @@ class MESH:
                     self.global_best_attribution()
 
                 if self.gpu:
+                    div = int(np.ceil(self.params.population_size / 1024))
+
                     cuda.memcpy_htod(self.seed_g, np.random.randint(0, int(1e9), dtype=np.int32))
                     differential_mutation = self.mod.get_function("differential_mutation")
                     differential_mutation(self.params.func_n_g, self.params.Xr_pool_type_g,
@@ -1774,7 +1795,8 @@ class MESH:
                                           self.xst_fitness_g, self.xst_dominate_g, self.personal_best_fitness_g,
                                           self.personal_best_velocity_g, self.personal_best_tam_g,
                                           self.update_from_differential_mutation_g, self.seed_g, self.alpha_g,
-                                          block=(self.params.population_size, 1, 1), grid=(1, 1, 1))
+                                          block=(int(np.ceil(self.params.population_size / div)), 1, 1),
+                                          grid=(div, 1, 1))
                     cuda.Context.synchronize()
 
                 if self.gpu:
@@ -1782,24 +1804,36 @@ class MESH:
                     start = dt.now()
 
                     # atualizar fronts
-                    div = int(self.params.population_size/16)
+                    # div = int(self.params.population_size/16)
+                    div = int(np.ceil(self.params.population_size / 32))
+
                     fast_nondominated_sort = self.mod.get_function("fast_nondominated_sort")
                     fast_nondominated_sort(self.fitness_g, self.params.objectives_dim_g,
                                            self.domination_counter_g, self.params.population_size_g,
-                                           self.params.otimizations_type_g, self.params.objectives_dim_g,
-                                           block=(16, 32, 1),
-                                           grid=(div, int(div/2), 1))
+                                           self.params.otimizations_type_g,
+                                           # block=(16, 32, 1),
+                                           # grid=(div, int(div/2), 1))
+                                           block=(32, 32, 1),
+                                           grid=(div, div, 1))
                     cuda.Context.synchronize()
 
+                    div = int(np.ceil(self.params.population_size / 1024))
                     fast_nondominated_sort2 = self.mod.get_function("fast_nondominated_sort2")
                     fast_nondominated_sort2(self.domination_counter_g, self.params.population_size_g,
-                                            self.params.population_size_g,
-                                            block=(self.params.population_size, 1, 1), grid=(1, 1, 1))
+                                            # block=(self.params.population_size, 1, 1), grid=(1, 1, 1))
+                                            block=(int(np.ceil(self.params.population_size / div)), 1, 1),
+                                            grid=(div, 1, 1))
                     cuda.Context.synchronize()
 
                     fast_nondominated_sort3 = self.mod.get_function("fast_nondominated_sort3")
-                    fast_nondominated_sort3(self.domination_counter_g, self.params.population_size_g,
-                                            self.params.population_size_g, self.fronts_g, self.tams_fronts_g,
+                    # fast_nondominated_sort3(self.domination_counter_g, self.params.population_size_g,
+                    #                         self.params.population_size_g, self.fronts_g,
+                    #                         self.tams_fronts_g,
+                    #                         self.rank_g,
+                    fast_nondominated_sort3(self.domination_counter_g,
+                                            self.params.population_size_g,
+                                            self.fronts_g,
+                                            self.tams_fronts_g,
                                             self.rank_g,
                                             block=(1, 1, 1), grid=(1, 1, 1))
                     cuda.Context.synchronize()
@@ -1814,31 +1848,43 @@ class MESH:
                                           block=(1, 1, 1), grid=(1, 1, 1))
                     cuda.Context.synchronize()
 
-                    tam_front0_mem = np.zeros(1, dtype=np.int32)
-                    cuda.memcpy_dtoh(tam_front0_mem, self.tam_front0_mem_g)
-                    if tam_front0_mem > 32:
-                        block_x = 32
-                        grid_x = int(np.ceil(tam_front0_mem[0] / 32))
-                    else:
-                        block_x = int(tam_front0_mem[0])
-                        grid_x = 1
+                    # ordena o conjunto front0 mais memoria
+                    tam_front = np.zeros(1, dtype=np.int32)
+                    cuda.memcpy_dtoh(tam_front, self.tam_front0_mem_g)
+                    div = int(np.ceil(tam_front[0] / 32))
 
-                    # inicializa a matriz de dominacao de front0_mem
-                    fast_nondominated_sort4_2 = self.mod.get_function("fast_nondominated_sort4_2")
-                    fast_nondominated_sort4_2(self.fitness_g, self.params.objectives_dim_g,
+                    # if tam_front > 32:
+                    #     block_x = 32
+                    #     grid_x = int(np.ceil(tam_front[0]/32))
+                    # else:
+                    #     block_x = int(tam_front[0])
+                    #     grid_x = 1
+
+                    # print(block_x, grid_x, tam_front)
+
+                    # ordena o vetor front0+memoria
+                    fast_nondominated_sort4 = self.mod.get_function("fast_nondominated_sort4")
+                    fast_nondominated_sort4(self.fitness_g, self.params.objectives_dim_g,
                                             self.domination_counter_g, self.params.population_size_g,
-                                            self.params.otimizations_type_g, self.params.objectives_dim_g,
+                                            self.params.otimizations_type_g,
+                                            self.params.objectives_dim_g,
                                             self.front0_mem_g, self.tam_front0_mem_g,
                                             # block=(int(tam_front[0]), int(tam_front[0]), 1),
                                             # grid=(1, 1, 1))
-                                            block=(block_x, block_x, 1),
-                                            grid=(grid_x, grid_x, 1))
+                                            # block=(block_x, block_x, 1),
+                                            # grid=(grid_x, grid_x, 1))
+                                            block=(32, 32, 1),
+                                            grid=(div, div, 1))
                     cuda.Context.synchronize()
 
+                    div = int(np.ceil(tam_front[0] / 1024))
                     fast_nondominated_sort5 = self.mod.get_function("fast_nondominated_sort5")
                     fast_nondominated_sort5(self.domination_counter_g,
-                                            block=(int(tam_front0_mem[0]), 1, 1),
-                                            grid=(1, 1, 1))
+                                            self.tam_front0_mem_g,
+                                            # block=(int(tam_front[0]), 1, 1),
+                                            # grid=(1, 1, 1))
+                                            block=(int(np.ceil(tam_front[0] / div)),
+                                                   1, 1), grid=(div, 1, 1))
                     cuda.Context.synchronize()
 
                     fast_nondominated_sort6 = self.mod.get_function("fast_nondominated_sort6")
@@ -1847,6 +1893,7 @@ class MESH:
                                             block=(1, 1, 1), grid=(1, 1, 1))
                     cuda.Context.synchronize()
 
+                    #parei aqui 060725
                     i_g = cuda.mem_alloc(np.array([1], np.int32).nbytes)
                     #melhorar depois, colocar como atributo
                     tam_front0 = np.zeros(1, dtype=np.int32)
@@ -2122,26 +2169,26 @@ class MESH:
 
                 if self.gpu:
                     # atualizar fronts
-                    div1 = int(2*self.params.population_size/16)
-                    div2 = int(self.params.population_size * 2 / 32)
+                    div = int(np.ceil(2*self.params.population_size/32))
 
-                    fast_nondominated_sort = self.mod.get_function("fast_nondominated_sort")
+                    fast_nondominated_sort = self.mod.get_function("fast_nondominated_sort_copy")
                     fast_nondominated_sort(self.fitness_g, self.params.objectives_dim_g,
                                            self.domination_counter_g, self.params.population_size_g,
-                                           self.params.otimizations_type_g, self.params.objectives_dim_g,
-                                           block=(16, 32, 1),
-                                           grid=(div1, div2, 1))
+                                           self.params.otimizations_type_g,
+                                           block=(32, 32, 1),
+                                           grid=(div, div, 1))
                     cuda.Context.synchronize()
 
-                    temp = cuda.mem_alloc(np.zeros(1, dtype=np.int32).nbytes)
-                    cuda.memcpy_htod(temp, np.array(2 * self.params.population_size, dtype=np.int32))
-                    fast_nondominated_sort2 = self.mod.get_function("fast_nondominated_sort2")
-                    fast_nondominated_sort2(self.domination_counter_g, temp, temp,
-                                            block=(2 * self.params.population_size, 1, 1), grid=(1, 1, 1))
+                    div = int(np.ceil(2 * self.params.population_size / 1024))
+                    fast_nondominated_sort2 = self.mod.get_function("fast_nondominated_sort2_copy")
+                    fast_nondominated_sort2(self.domination_counter_g, self.params.population_size_g,
+                                            block=(int(np.ceil(2 * self.params.population_size/div)),
+                                                   1, 1), grid=(div, 1, 1))
                     cuda.Context.synchronize()
 
-                    fast_nondominated_sort3 = self.mod.get_function("fast_nondominated_sort3")
-                    fast_nondominated_sort3(self.domination_counter_g, temp, temp, self.fronts_g, self.tams_fronts_g,
+                    fast_nondominated_sort3 = self.mod.get_function("fast_nondominated_sort3_copy")
+                    fast_nondominated_sort3(self.domination_counter_g, self.params.population_size_g,
+                                            self.fronts_g, self.tams_fronts_g,
                                             self.rank_g,
                                             block=(1, 1, 1), grid=(1, 1, 1))
                     cuda.Context.synchronize()
@@ -2323,31 +2370,37 @@ class MESH:
                     div2 = int(self.params.population_size / 32)
                     # print(div1, div2)
 
+                    # ordenar fronts
+                    # div = int(self.params.population_size/16)
+                    div = int(np.ceil(self.params.population_size / 32))
+
                     fast_nondominated_sort = self.mod.get_function("fast_nondominated_sort")
                     fast_nondominated_sort(self.fitness_g, self.params.objectives_dim_g,
                                            self.domination_counter_g, self.params.population_size_g,
-                                           self.params.otimizations_type_g, self.params.objectives_dim_g,
-                                           block=(16, 32, 1),
-                                           grid=(div1, div2, 1))
+                                           self.params.otimizations_type_g,
+                                           # block=(16, 32, 1),
+                                           # grid=(div, int(div/2), 1))
+                                           block=(32, 32, 1),
+                                           grid=(div, div, 1))
                     cuda.Context.synchronize()
 
-                    # tam_front = np.zeros(256, dtype=np.int32)
-                    # cuda.memcpy_dtoh(tam_front, self.tams_fronts_g)
-                    # print(tam_front)
-
-                    temp = cuda.mem_alloc(np.zeros(1, dtype=np.int32).nbytes)
-                    cuda.memcpy_htod(temp, np.array(self.params.population_size, dtype=np.int32))
+                    div = int(np.ceil(self.params.population_size / 1024))
                     fast_nondominated_sort2 = self.mod.get_function("fast_nondominated_sort2")
-                    fast_nondominated_sort2(self.domination_counter_g, temp, temp,
-                                            block=(self.params.population_size, 1, 1), grid=(1, 1, 1))
+                    fast_nondominated_sort2(self.domination_counter_g, self.params.population_size_g,
+                                            # block=(self.params.population_size, 1, 1), grid=(1, 1, 1))
+                                            block=(int(np.ceil(self.params.population_size / div)),
+                                            1, 1), grid=(div, 1, 1))
                     cuda.Context.synchronize()
-
-                    # tam_front = np.zeros(256, dtype=np.int32)
-                    # cuda.memcpy_dtoh(tam_front, self.tams_fronts_g)
-                    # print(tam_front)
 
                     fast_nondominated_sort3 = self.mod.get_function("fast_nondominated_sort3")
-                    fast_nondominated_sort3(self.domination_counter_g, temp, temp, self.fronts_g, self.tams_fronts_g,
+                    # fast_nondominated_sort3(self.domination_counter_g, self.params.population_size_g,
+                    #                         self.params.population_size_g, self.fronts_g,
+                    #                         self.tams_fronts_g,
+                    #                         self.rank_g,
+                    fast_nondominated_sort3(self.domination_counter_g,
+                                            self.params.population_size_g,
+                                            self.fronts_g,
+                                            self.tams_fronts_g,
                                             self.rank_g,
                                             block=(1, 1, 1), grid=(1, 1, 1))
                     cuda.Context.synchronize()
@@ -2372,33 +2425,43 @@ class MESH:
                                            block=(1, 1, 1), grid=(1, 1, 1))
                     cuda.Context.synchronize()
 
+                    # ordena o conjunto front0 mais memoria
                     tam_front = np.zeros(1, dtype=np.int32)
                     cuda.memcpy_dtoh(tam_front, self.tam_front0_mem_g)
-                    if tam_front>32:
-                        block_x = 32
-                        grid_x = int(np.ceil(tam_front[0]/32))
-                    else:
-                        block_x = int(tam_front[0])
-                        grid_x = 1
+                    div = int(np.ceil(tam_front[0] / 32))
+
+                    # if tam_front > 32:
+                    #     block_x = 32
+                    #     grid_x = int(np.ceil(tam_front[0]/32))
+                    # else:
+                    #     block_x = int(tam_front[0])
+                    #     grid_x = 1
 
                     # print(block_x, grid_x, tam_front)
 
                     # ordena o vetor front0+memoria
-                    fast_nondominated_sort4_2 = self.mod.get_function("fast_nondominated_sort4_2")
-                    fast_nondominated_sort4_2(self.fitness_g, self.params.objectives_dim_g,
+                    fast_nondominated_sort4 = self.mod.get_function("fast_nondominated_sort4")
+                    fast_nondominated_sort4(self.fitness_g, self.params.objectives_dim_g,
                                             self.domination_counter_g, self.params.population_size_g,
-                                            self.params.otimizations_type_g, self.params.objectives_dim_g,
+                                            self.params.otimizations_type_g,
+                                            self.params.objectives_dim_g,
                                             self.front0_mem_g, self.tam_front0_mem_g,
                                             # block=(int(tam_front[0]), int(tam_front[0]), 1),
                                             # grid=(1, 1, 1))
-                                            block=(block_x, block_x, 1),
-                                            grid=(grid_x, grid_x, 1))
+                                            # block=(block_x, block_x, 1),
+                                            # grid=(grid_x, grid_x, 1))
+                                            block=(32, 32, 1),
+                                            grid=(div, div, 1))
                     cuda.Context.synchronize()
 
+                    div = int(np.ceil(tam_front[0] / 1024))
                     fast_nondominated_sort5 = self.mod.get_function("fast_nondominated_sort5")
                     fast_nondominated_sort5(self.domination_counter_g,
-                                            block=(int(tam_front[0]), 1, 1),
-                                            grid=(1, 1, 1))
+                                            self.tam_front0_mem_g,
+                                            # block=(int(tam_front[0]), 1, 1),
+                                            # grid=(1, 1, 1))
+                                            block=(int(np.ceil(tam_front[0] / div)),
+                                                   1, 1), grid=(div, 1, 1))
                     cuda.Context.synchronize()
 
                     fast_nondominated_sort6 = self.mod.get_function("fast_nondominated_sort6")

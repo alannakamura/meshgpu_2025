@@ -1448,101 +1448,170 @@ __device__ int a_dominate_b(double *fitness1, double *fitness2, int dim, int *ma
     return temp;
 }
 
-__global__ void fast_nondominated_sort2(int *domination_counter, int *colunas, int *population_size)
+__global__ void fast_nondominated_sort(double *fitness, int *dim_fitness, int *domination_counter,
+int *population_size, int *minimization)
 {
-    int i = threadIdx.x;
-    domination_counter[population_size[0]*colunas[0]+i] = 0;
-    for(int j=0;j<colunas[0];j++)
-    {
-        domination_counter[population_size[0]*colunas[0]+i] += domination_counter[j*colunas[0]+i];
-    }
-}
-
-__global__ void fast_nondominated_sort5(int *domination_counter)
-{
-    int i = threadIdx.x;
-    int colunas = blockDim.x;
-    domination_counter[blockDim.x*colunas+i] = 0;
-//     printf("%d %d ", blockDim.x, blockDim.y);
-    for(int j=0;j<colunas;j++)
-    {
-        domination_counter[blockDim.x*colunas+i] += domination_counter[j*colunas+i];
-    }
-}
-
-__global__ void fast_nondominated_sort(double *fitness, int *dim, int *domination_counter,
-int *colunas, int *minimization, int *colunas2)
-{
-//     int l = blockIdx.x*gridDim.x+threadIdx.x;
     int l = blockIdx.x*blockDim.x+threadIdx.x;
     int c = blockIdx.y*blockDim.y+threadIdx.y;
-//     int c = blockIdx.y*gridDim.y+threadIdx.y;
-    int tam = gridDim.y*blockDim.y;
-//     printf("l=%d c=%d bx=%d by=%d gdx=%d gdy=%d tx=%d ty=%d\n",l, c,
-//     blockIdx.x, blockIdx.y, gridDim.x, gridDim.y, threadIdx.x, threadIdx.y);
-//     printf("i=%d j=%d tam=%d\n", l,c,tam);
-//     printf("fitness[0]=%lf fitness[1]=%lf\n", (fitness+l)[0], (fitness+l)[1]);
-    domination_counter[l*tam+c] = 0;
-    domination_counter[l*tam+c] = a_dominate_b(fitness+l*colunas2[0], fitness+c*colunas2[0], dim[0], minimization);
-//     if(l==127 && c==127)
-//     {
-//         printf("%lf %lf\n", fitness[8*colunas2[0]], fitness[8*colunas2[0]+1]);
-//         printf("%lf %lf\n", fitness[19*colunas2[0]], fitness[19*colunas2[0]+1]);
-//         printf("%d %d %d %d\n", minimization[0], minimization[1],domination_counter[8*tam+19], tam);
-//     }
-//     printf("%d %d %d %d %d %d %d %d %lf %lf %lf %lf\n", l, c, blockIdx.x, blockIdx.y, threadIdx.x, threadIdx.y, tam,
-//      domination_counter[l*tam+c], (fitness+l*colunas2[0])[0], (fitness+l*colunas2[0])[1],(fitness+c*colunas2[0])[0],
-//       (fitness+c*colunas2[0])[1]);
+//     int tam = gridDim.y*blockDim.y;
+
+//     domination_counter[l*tam+c] = 0;
+//     domination_counter[l*tam+c] = a_dominate_b(fitness+l*colunas2[0], fitness+c*colunas2[0],
+//     dim_fitness[0], minimization);
+
+    if(l<population_size[0] && c<population_size[0])
+    {
+        domination_counter[l*population_size[0]+c] =
+        a_dominate_b(fitness+l*dim_fitness[0], fitness+c*dim_fitness[0], dim_fitness[0], minimization);
+    }
+}
+
+__global__ void fast_nondominated_sort_copy(double *fitness, int *dim_fitness, int *domination_counter,
+int *population_size, int *minimization, int *colunas2)
+{
+    int l = blockIdx.x*blockDim.x+threadIdx.x;
+    int c = blockIdx.y*blockDim.y+threadIdx.y;
+//     int tam = gridDim.y*blockDim.y;
+
+//     domination_counter[l*tam+c] = 0;
+//     domination_counter[l*tam+c] = a_dominate_b(fitness+l*colunas2[0], fitness+c*colunas2[0],
+//     dim_fitness[0], minimization);
+
+    if(l<2*population_size[0] && c<2*population_size[0])
+    {
+        domination_counter[l*2*population_size[0]+c] =
+        a_dominate_b(fitness+l*dim_fitness[0], fitness+c*dim_fitness[0], dim_fitness[0], minimization);
+    }
+}
+
+__global__ void fast_nondominated_sort2(int *domination_counter, int *population_size)
+{
+    int i = blockIdx.x*blockDim.x+threadIdx.x;
+    domination_counter[population_size[0]*population_size[0]+i] = 0;
+
+    for(int j=0;j<population_size[0];j++)
+    {
+        domination_counter[population_size[0]*population_size[0]+i] +=
+        domination_counter[j*population_size[0]+i];
+    }
+}
+
+__global__ void fast_nondominated_sort2_copy(int *domination_counter, int *population_size)
+{
+    int i = blockIdx.x*blockDim.x+threadIdx.x;
+    domination_counter[2*population_size[0]*2*population_size[0]+i] = 0;
+
+    for(int j=0;j<2*population_size[0];j++)
+    {
+        domination_counter[2*population_size[0]*2*population_size[0]+i] +=
+        domination_counter[j*2*population_size[0]+i];
+    }
+}
+
+__global__ void fast_nondominated_sort3(int *domination_counter, int *population_size,
+ int *fronts, int *tam, int *rank)
+{
+    int i, j2=0, k = 0, rank_count = 0;
+    int tamP = 0;
+    int inicioFrontAnterior;
+
+    for(i=0;i<population_size[0];i++)
+    {
+        if(domination_counter[population_size[0]*population_size[0]+i]==0)
+        {
+            domination_counter[population_size[0]*population_size[0]+i]=-1;
+            fronts[j2] = i;
+            rank[i] = rank_count;
+            tamP+=1;
+            j2+=1;
+        }
+    }
+
+    tam[k] = tamP;
+    k += 1;
+
+    while(j2<population_size[0])
+    {
+        rank_count +=1 ;
+        tamP = 0;
+        inicioFrontAnterior = j2-tam[k-1];
+        for(i=0;i<population_size[0];i++)
+        {
+            for(int j=0;j<tam[k-1];j++)
+            {
+                if(domination_counter[fronts[inicioFrontAnterior+j]*population_size[0]+i]==1)
+                {
+                    domination_counter[population_size[0]*population_size[0]+i]-= 1;
+                }
+            }
+            if(domination_counter[population_size[0]*population_size[0]+i] == 0)
+            {
+                domination_counter[population_size[0]*population_size[0]+i] = -1;
+                fronts[j2] = i;
+                rank[i] = rank_count;
+                j2+=1;
+                tamP+=1;
+            }
+        }
+        tam[k] = tamP;
+        k+=1;
+    }
+    tam[k] = -1;
+}
+
+__global__ void fast_nondominated_sort3_copy(int *domination_counter, int *population_size,
+ int *fronts, int *tam, int *rank)
+{
+    int i, j2=0, k = 0, rank_count = 0;
+    int tamP = 0;
+    int inicioFrontAnterior;
+
+    for(i=0;i<2*population_size[0];i++)
+    {
+        if(domination_counter[2*population_size[0]*2*population_size[0]+i]==0)
+        {
+            domination_counter[2*population_size[0]*2*population_size[0]+i]=-1;
+            fronts[j2] = i;
+            rank[i] = rank_count;
+            tamP+=1;
+            j2+=1;
+        }
+    }
+
+    tam[k] = tamP;
+    k += 1;
+
+    while(j2<2*population_size[0])
+    {
+        rank_count +=1 ;
+        tamP = 0;
+        inicioFrontAnterior = j2-tam[k-1];
+        for(i=0;i<2*population_size[0];i++)
+        {
+            for(int j=0;j<tam[k-1];j++)
+            {
+                if(domination_counter[fronts[inicioFrontAnterior+j]*2*population_size[0]+i]==1)
+                {
+                    domination_counter[2*population_size[0]*2*population_size[0]+i]-= 1;
+                }
+            }
+            if(domination_counter[2*population_size[0]*2*population_size[0]+i] == 0)
+            {
+                domination_counter[2*population_size[0]*2*population_size[0]+i] = -1;
+                fronts[j2] = i;
+                rank[i] = rank_count;
+                j2+=1;
+                tamP+=1;
+            }
+        }
+        tam[k] = tamP;
+        k+=1;
+    }
+    tam[k] = -1;
 }
 
 __global__ void fast_nondominated_sort4(double *fitness, int *dim, int *domination_counter,
-int *colunas, int *minimization, int *colunas2, int *front0_mem, int *tam_front0_mem)
-{
-//     int l = blockIdx.x*gridDim.x+threadIdx.x;
-    int l = blockIdx.x*blockDim.x+threadIdx.x;
-    int c = blockIdx.y*blockDim.y+threadIdx.y;
-//     int l2 = front0_mem[threadIdx.x];
-//     int c2 = front0_mem[threadIdx.y];
-    int l2 = front0_mem[l];
-    int c2 = front0_mem[c];
-//     int c = blockIdx.y*gridDim.y+threadIdx.y;
-//     int tam = gridDim.y*blockDim.y;
-//     printf("l=%d c=%d bx=%d by=%d gdx=%d gdy=%d tx=%d ty=%d\n",l, c,
-//     blockIdx.x, blockIdx.y, gridDim.x, gridDim.y, threadIdx.x, threadIdx.y);
-//     printf("i=%d j=%d tam=%d\n", l,c,tam);
-//     printf("fitness[0]=%lf fitness[1]=%lf\n", (fitness+l)[0], (fitness+l)[1]);
-    domination_counter[l*tam_front0_mem[0]+c] = 0;
-//     printf("tam %d\n", tam);
-//     if(l2 == 256 && c2 == 5)
-//     {
-//         printf("%d %d %d %d %lf %lf\n", l, c, l2, c2, fitness[l2*2], fitness[l2*2+1]);
-//         printf("%d %d %d %d %lf %lf\n", l, c, l2, c2, fitness[c2*2], fitness[c2*2+1]);
-//         printf("%d\n", domination_counter[l*tam_front0_mem[0]+c]);
-//     }
-    domination_counter[l*tam_front0_mem[0]+c] = a_dominate_b(fitness+l2*colunas2[0], fitness+c2*colunas2[0], dim[0], minimization);
-//     if(l2 == 256 && c2 == 5)
-//     {
-//         printf("%d %d %d %d %lf %lf\n", l, c, l2, c2, fitness[l2*2], fitness[l2*2+1]);
-//         printf("%d %d %d %d %lf %lf\n", l, c, l2, c2, fitness[c2*2], fitness[c2*2+1]);
-//         printf("%d\n", domination_counter[l*tam_front0_mem[0]+c]);
-//     }
-//     if(l==127 && c==127)
-//     {
-//         printf("%lf %lf\n", fitness[8*colunas2[0]], fitness[8*colunas2[0]+1]);
-//         printf("%lf %lf\n", fitness[19*colunas2[0]], fitness[19*colunas2[0]+1]);
-//         printf("%d %d %d %d\n", minimization[0], minimization[1],domination_counter[8*tam+19], tam);
-//     }
-//     printf("%d %d %d %d %d %d %d %d %lf %lf %lf %lf\n", l, c, blockIdx.x, blockIdx.y, threadIdx.x, threadIdx.y, tam,
-//      domination_counter[l*tam+c], (fitness+l*colunas2[0])[0], (fitness+l*colunas2[0])[1],(fitness+c*colunas2[0])[0],
-//       (fitness+c*colunas2[0])[1]);
-}
-
-//testar erro
-// pycuda._driver.LogicError: cuCtxSynchronize failed: an illegal memory access was encountered
-// PyCUDA WARNING: a clean-up operation failed (dead context maybe?)
-// cuMemFree failed: an illegal memory access was encountered
-__global__ void fast_nondominated_sort4_2(double *fitness, int *dim, int *domination_counter,
-int *colunas, int *minimization, int *colunas2, int *front0_mem, int *tam_front0_mem)
+int *colunas, int *minimization, int *dim_fit, int *front0_mem, int *tam_front0_mem)
 {
     int l = blockIdx.x*blockDim.x+threadIdx.x;
     int c = blockIdx.y*blockDim.y+threadIdx.y;
@@ -1553,8 +1622,49 @@ int *colunas, int *minimization, int *colunas2, int *front0_mem, int *tam_front0
         l2 = front0_mem[l];
         c2 = front0_mem[c];
         domination_counter[l*tam_front0_mem[0]+c] = 0;
-        domination_counter[l*tam_front0_mem[0]+c] = a_dominate_b(fitness+l2*colunas2[0], fitness+c2*colunas2[0], dim[0], minimization);
+//         domination_counter[l*tam_front0_mem[0]+c] = a_dominate_b(fitness+l2*colunas2[0],
+//         fitness+c2*colunas2[0], dim[0], minimization);
+        domination_counter[l*tam_front0_mem[0]+c] = a_dominate_b(fitness+l2*dim_fit[0],
+        fitness+c2*dim_fit[0], dim[0], minimization);
     }
+}
+
+__global__ void fast_nondominated_sort5(int *domination_counter, int *columns)
+{
+//     int i = threadIdx.x;
+    int i = blockIdx.x*blockDim.x+threadIdx.x;
+//     int colunas = blockDim.x;
+
+//     domination_counter[blockDim.x*colunas+i] = 0;
+    domination_counter[columns[0]*columns[0]+i] = 0;
+
+//     printf("%d %d ", blockDim.x, blockDim.y);
+    if(i<columns[0])
+    {
+        for(int j=0;j<columns[0];j++)
+        {
+//          domination_counter[blockDim.x*colunas+i] += domination_counter[j*colunas+i];
+            domination_counter[columns[0]*columns[0]+i]  += domination_counter[j*columns[0]+i];
+        }
+    }
+}
+
+__global__ void fast_nondominated_sort6(int *domination_counter, int *tam_front0_mem,
+int *front0_mem, int *tam_front0, int *front0)
+{
+    int i, j=0;
+
+    tam_front0[0]=0;
+    for(i=0;i<tam_front0_mem[0];i++)
+    {
+        if(domination_counter[tam_front0_mem[0]*tam_front0_mem[0]+i]==0)
+        {
+            front0[j] = front0_mem[i];
+            tam_front0[0]+=1;
+            j+=1;
+        }
+    }
+    front0[j] = -1;
 }
 
 __global__ void fast_nondominated_sort7(double *fitness, int *dim, int *domination_counter,
@@ -1569,83 +1679,6 @@ int *colunas, int *minimization, int *colunas2)
         domination_counter[l*tam+c] = 0;
         domination_counter[l*tam+c] = a_dominate_b(fitness+l*colunas2[0], fitness+c*colunas2[0], dim[0], minimization);
     }
-}
-
-__global__ void fast_nondominated_sort3(int *domination_counter, int *colunas, int *population_size,
- int *fronts, int *tam, int *rank)
-{
-//     int j1;
-    int i, j2=0, k = 0, rank_count = 0;
-    int tamP = 0;
-    int inicioFrontAnterior;
-
-    for(i=0;i<population_size[0];i++)
-    {
-//         printf("%d\n",i);
-        if(domination_counter[population_size[0]*colunas[0]+i]==0)
-        {
-            domination_counter[population_size[0]*colunas[0]+i]=-1;
-//             printf("%d ",i);
-            fronts[j2] = i;
-            rank[i] = rank_count;
-            tamP+=1;
-            j2+=1;
-        }
-    }
-//     for(i=0;i<tamP;i++)
-//     {
-//         printf("gpu depois 1%d ", fronts[i]);
-//     }
-//     printf("\n");
-
-    tam[k] = tamP;
-    k += 1;
-//     printf("front zero\n");
-//     for(i=0;i<j2;i++)
-//     {
-//         printf("%d ", fronts[i]);
-//     }
-//     printf("\n");
-//     tamP = 0;
-//     printf("%d ",i);
-
-    while(j2<population_size[0])
-    {
-        rank_count +=1 ;
-//         printf("j2 =%d, ", j2);
-//         printf("\n");
-        tamP = 0;
-        inicioFrontAnterior = j2-tam[k-1];
-//         printf("inicio front %d\n", inicioFrontAnterior);
-        for(i=0;i<population_size[0];i++)
-        {
-//             printf("i = %d ",i);
-//             for(int j=0;j<population_size[0];j++)
-//             {
-            for(int j=0;j<tam[k-1];j++)
-            {
-//                 printf("j = %d ",j);
-//                 if(domination_counter[fronts[inicioFrontAnterior+j]*colunas[0]+i]==1 &&
-//                 domination_counter[population_size[0]*colunas[0]+fronts[inicioFrontAnterior+j]]==0)
-                if(domination_counter[fronts[inicioFrontAnterior+j]*colunas[0]+i]==1)
-                {
-                    domination_counter[population_size[0]*colunas[0]+i]-= 1;
-                }
-            }
-//             printf("dom[%d] = %d, " , i, domination_counter[population_size[0]*colunas[0]+i]);
-            if(domination_counter[population_size[0]*colunas[0]+i] == 0)
-            {
-                domination_counter[population_size[0]*colunas[0]+i] = -1;
-                fronts[j2] = i;
-                rank[i] = rank_count;
-                j2+=1;
-                tamP+=1;
-            }
-        }
-        tam[k] = tamP;
-        k+=1;
-    }
-    tam[k] = -1;
 }
 
 __global__ void fast_nondominated_sort3_teste(int *domination_counter, int *colunas, int *population_size,
@@ -1708,32 +1741,6 @@ __global__ void fast_nondominated_sort3_teste(int *domination_counter, int *colu
     }
     tam[k] = -1;
     printf("%lf %lf %lf\n", fitness[0], fitness[1], fitness[2]);
-}
-
-__global__ void fast_nondominated_sort6(int *domination_counter, int *tam_front0_mem, int *front0_mem,
-int *tam_front0, int *front0)
-{
-    int i, j=0;
-
-    tam_front0[0]=0;
-//     printf("tam_front0 = %d\n", tam_front0[0]);
-//     printf("tam_front0_mem = %d\n", tam_front0_mem[0]);
-    for(i=0;i<tam_front0_mem[0];i++)
-    {
-//         printf("%d, ", domination_counter[tam_front0_mem[0]*tam_front0_mem[0]+i]);
-//         printf("%d\n",i);
-        if(domination_counter[tam_front0_mem[0]*tam_front0_mem[0]+i]==0)
-        {
-//             domination_counter[tam_dom[0]*tam_dom[0]+i]=-1;
-//             printf("%d ",i);
-            front0[j] = front0_mem[i];
-            tam_front0[0]+=1;
-            j+=1;
-        }
-    }
-//     printf("j = %d, tam_front0_mem = %d\n", j, tam_front0[0]);
-    front0[j] = -1;
-//     printf("j = %d, tam_front0_mem = %d\n", j, tam_front0[0]);
 }
 
 __global__ void print_dominantion_counter(int *m, int *colunas, int *population_size)
@@ -3059,199 +3066,203 @@ int *personal_guide_array_size, int *personal_best_tam, int *maximize)
 }
 
 __global__ void differential_mutation(int *func_n, int *xr_pool_type, int *tam_pop, int *tam_mem,
- double *position, int *tam_pos, double *personal_best_p, int *personal_guide_array_size, double *fitness,
- int *tam_fit, int *maximize, int *xr_pool, int *DE_mutation_type, int *xr_list, double *weights,
- double *xst, double *pos_min, double *pos_max, int *secondary_params,
- double *xst_fitness, int *xst_dominate, double *personal_best_f, double *personal_best_v, int *personal_best_tam,
- int *update_from_differential_mutation, int *seed, double *alpha)
+ double *position, int *tam_pos, double *personal_best_p, int *personal_guide_array_size,
+ double *fitness, int *tam_fit, int *maximize, int *xr_pool, int *DE_mutation_type, int *xr_list,
+ double *weights, double *xst, double *pos_min, double *pos_max, int *secondary_params,
+ double *xst_fitness, int *xst_dominate, double *personal_best_f, double *personal_best_v,
+ int *personal_best_tam, int *update_from_differential_mutation, int *seed, double *alpha)
 {
-    int i = threadIdx.x, j, tamPersonal, temp1, temp2, k=0, pool_tam=0;
+    int i = blockIdx.x*blockDim.x+threadIdx.x;
+    int j, tamPersonal, temp1, temp2, k=0, pool_tam=0;
     curandState state;
     int xr_list_l[5];
     int mutation_index_l = -1;
     int whatPersonal_l = 0;
     double mutation_chance_l[1000];
 
-    curand_init(seed[0], i, 0, &state);
-
-//     mutation_index_l = xr_pool[(int)(curand_uniform(&state)*tam_pos[0])];
-    mutation_index_l = (int)(curand_uniform(&state)*(tam_pos[0]-1));
-    for(j=0;j<tam_pos[0];j++)
+    if(i<tam_pop[0])
     {
-        mutation_chance_l[j] = curand_uniform(&state);
-    }
+        curand_init(seed[0], i, 0, &state);
 
-    tamPersonal = tam_pos[0]*personal_guide_array_size[0];
-
-    if(xr_pool_type[0] == 1)// Apenas Memoria
-    {
-        for(j=0;j<tam_mem[0];j++)
+    //     mutation_index_l = xr_pool[(int)(curand_uniform(&state)*tam_pos[0])];
+        mutation_index_l = (int)(curand_uniform(&state)*(tam_pos[0]-1));
+        for(j=0;j<tam_pos[0];j++)
         {
-//             personal_best == m
-//             temp1 = equal(personal_best_p+i*tamPersonal+whatPersonal[i]*tam_pos[0],
-//             position+(2*tam_pop[0]+j)*tam_pos[0], tam_pos);
-            temp1 = equal(personal_best_p+i*tamPersonal+whatPersonal_l*tam_pos[0],
-            position+(2*tam_pop[0]+j)*tam_pos[0], tam_pos);
-//             particle == m
-            temp2 = equal(position+(i*tam_pos[0]),
-            position+(2*tam_pop[0]+j)*tam_pos[0], tam_pos);
+            mutation_chance_l[j] = curand_uniform(&state);
+        }
 
-            if(!(temp1 == 1) || !(temp2 == 1))
+        tamPersonal = tam_pos[0]*personal_guide_array_size[0];
+
+        if(xr_pool_type[0] == 1)// Apenas Memoria
+        {
+            for(j=0;j<tam_mem[0];j++)
             {
-                if(a_dominate_b(fitness+i*tam_fit[0], fitness+(2*tam_pop[0]+j)*tam_fit[0],
-                 tam_fit[0], maximize) == 0)
+    //             personal_best == m
+    //             temp1 = equal(personal_best_p+i*tamPersonal+whatPersonal[i]*tam_pos[0],
+    //             position+(2*tam_pop[0]+j)*tam_pos[0], tam_pos);
+                temp1 = equal(personal_best_p+i*tamPersonal+whatPersonal_l*tam_pos[0],
+                position+(2*tam_pop[0]+j)*tam_pos[0], tam_pos);
+    //             particle == m
+                temp2 = equal(position+(i*tam_pos[0]),
+                position+(2*tam_pop[0]+j)*tam_pos[0], tam_pos);
+
+                if(!(temp1 == 1) || !(temp2 == 1))
                 {
-                    xr_pool[i*(2*tam_pop[0]+tam_mem[0])+k] = j;
-                    pool_tam+=1;
-                    k+=1;
+                    if(a_dominate_b(fitness+i*tam_fit[0], fitness+(2*tam_pop[0]+j)*tam_fit[0],
+                     tam_fit[0], maximize) == 0)
+                    {
+                        xr_pool[i*(2*tam_pop[0]+tam_mem[0])+k] = j;
+                        pool_tam+=1;
+                        k+=1;
+                    }
                 }
             }
         }
-    }
 
-    if(DE_mutation_type[0] == 0 && k >= 3) //DE\rand\1\Bin
-    {
-        xr_list_l[0] = xr_pool[(int)(curand_uniform(&state)*pool_tam)];
-        xr_list_l[1] = xr_pool[(int)(curand_uniform(&state)*pool_tam)];
-        xr_list_l[2] = xr_pool[(int)(curand_uniform(&state)*pool_tam)];
-
-        for(j=0;j<tam_pos[0];j++)
+        if(DE_mutation_type[0] == 0 && k >= 3) //DE\rand\1\Bin
         {
-            //faz xst = (xr1-xr2)w5 + xr0
-            xst[i*tam_pos[0]+j] = position[(2*tam_pop[0]+xr_list_l[1])*(tam_pos[0])+j] -
-            position[(2*tam_pop[0]+xr_list[2])*(tam_pos[0])+j];
-            xst[i*tam_pos[0]+j] *= weights[5*tam_pop[0]+i];
-            xst[i*tam_pos[0]+j] += position[(2*tam_pop[0]+xr_list[0])*(tam_pos[0])+j];
+            xr_list_l[0] = xr_pool[(int)(curand_uniform(&state)*pool_tam)];
+            xr_list_l[1] = xr_pool[(int)(curand_uniform(&state)*pool_tam)];
+            xr_list_l[2] = xr_pool[(int)(curand_uniform(&state)*pool_tam)];
 
-            if(xst[i*tam_pos[0]+j]<pos_min[0])
+            for(j=0;j<tam_pos[0];j++)
             {
-                xst[i*tam_pos[0]+j] = pos_min[0];
-            }
-            if(xst[i*tam_pos[0]+j]>pos_max[0])
-            {
-                xst[i*tam_pos[0]+j] = pos_max[0];
-            }
+                //faz xst = (xr1-xr2)w5 + xr0
+                xst[i*tam_pos[0]+j] = position[(2*tam_pop[0]+xr_list_l[1])*(tam_pos[0])+j] -
+                position[(2*tam_pop[0]+xr_list[2])*(tam_pos[0])+j];
+                xst[i*tam_pos[0]+j] *= weights[5*tam_pop[0]+i];
+                xst[i*tam_pos[0]+j] += position[(2*tam_pop[0]+xr_list[0])*(tam_pos[0])+j];
 
-            if(j == mutation_index_l || (mutation_chance_l[j] < weights[4*tam_pop[0]+i]))
-            {
-                xst[i*tam_pos[0]+j] =
-                personal_best_p[i*tamPersonal+whatPersonal_l*tam_pos[0]+j];
+                if(xst[i*tam_pos[0]+j]<pos_min[0])
+                {
+                    xst[i*tam_pos[0]+j] = pos_min[0];
+                }
+                if(xst[i*tam_pos[0]+j]>pos_max[0])
+                {
+                    xst[i*tam_pos[0]+j] = pos_max[0];
+                }
+
+                if(j == mutation_index_l || (mutation_chance_l[j] < weights[4*tam_pop[0]+i]))
+                {
+                    xst[i*tam_pos[0]+j] =
+                    personal_best_p[i*tamPersonal+whatPersonal_l*tam_pos[0]+j];
+                }
             }
         }
-    }
 
-    // avaliar xst
-    if(func_n[0]==11)
-    {
-        zdt1_device(xst, tam_pos, xst_fitness, i);
-    }
-    if(func_n[0]==12)
-    {
-        zdt2_device(xst, tam_pos, xst_fitness, i);
-    }
-    if(func_n[0]==13)
-    {
-        zdt3_device(xst, tam_pos, xst_fitness, i);
-    }
-    if(func_n[0]==14)
-    {
-        zdt4_device(xst, tam_pos, xst_fitness, i);
-    }
-    if(func_n[0]==15)
-    {
-        zdt5(xst, tam_pos, xst_fitness, i);
-    }
-    if(func_n[0]==16)
-    {
-        zdt6(xst, tam_pos, xst_fitness, i);
-    }
-    if(func_n[0]==1)
-    {
-        dtlz1(xst, tam_pos, xst_fitness, i);
-    }
-    if(func_n[0]==2)
-    {
-        dtlz2(xst, tam_pos, xst_fitness, i);
-    }
-    if(func_n[0]==3)
-    {
-        dtlz3(xst, tam_pos, xst_fitness, i);
-    }
-    if(func_n[0]==4)
-    {
-        dtlz4(xst, tam_pos, xst_fitness, i);
-    }
-    if(func_n[0]==5)
-    {
-        dtlz5(xst, tam_pos, xst_fitness, i);
-    }
-    if(func_n[0]==6)
-    {
-        dtlz6(xst, tam_pos, xst_fitness, i);
-    }
-    if(func_n[0]==7)
-    {
-        dtlz7(xst, tam_pos, xst_fitness, i);
-    }
-    if(func_n[0] == 21)
-    {
-        wfg1(xst, tam_pos, xst_fitness, i);
-    }
-    if(func_n[0] == 31)
-    {
-        mw1(xst, tam_pos, xst_fitness, i, alpha);
-    }
-    if(func_n[0] == 32)
-    {
-        mw2(xst, tam_pos, xst_fitness, i, alpha);
-    }
-    if(func_n[0] == 33)
-    {
-        mw3(xst, tam_pos, xst_fitness, i, alpha);
-    }
-    if(func_n[0] == 34)
-    {
-        mw4(xst, tam_pos, xst_fitness, i, alpha);
-    }
-    if(func_n[0] == 35)
-    {
-        mw5(xst, tam_pos, xst_fitness, i, alpha);
-    }
-    if(func_n[0] == 36)
-    {
-        mw6(xst, tam_pos, xst_fitness, i, alpha);
-    }
-    if(func_n[0] == 37)
-    {
-        mw7(xst, tam_pos, xst_fitness, i, alpha);
-    }
-    if(func_n[0] == 39)
-    {
-        mw9(xst, tam_pos, xst_fitness, i, alpha);
-    }
-    if(func_n[0] == 310)
-    {
-        mw10(xst, tam_pos, xst_fitness, i, alpha);
-    }
-
-//     verificar se xst domina a particula i
-    if(a_dominate_b(xst_fitness+(i*tam_fit[0]), fitness+(i*tam_fit[0]), tam_fit[0], maximize))
-    {
-        xst_dominate[i] = 1;
-        for(j=0;j<tam_pos[0];j++)
+        // avaliar xst
+        if(func_n[0]==11)
         {
-            position[i*tam_pos[0]+j] = xst[i*tam_pos[0]+j];
+            zdt1_device(xst, tam_pos, xst_fitness, i);
+        }
+        if(func_n[0]==12)
+        {
+            zdt2_device(xst, tam_pos, xst_fitness, i);
+        }
+        if(func_n[0]==13)
+        {
+            zdt3_device(xst, tam_pos, xst_fitness, i);
+        }
+        if(func_n[0]==14)
+        {
+            zdt4_device(xst, tam_pos, xst_fitness, i);
+        }
+        if(func_n[0]==15)
+        {
+            zdt5(xst, tam_pos, xst_fitness, i);
+        }
+        if(func_n[0]==16)
+        {
+            zdt6(xst, tam_pos, xst_fitness, i);
+        }
+        if(func_n[0]==1)
+        {
+            dtlz1(xst, tam_pos, xst_fitness, i);
+        }
+        if(func_n[0]==2)
+        {
+            dtlz2(xst, tam_pos, xst_fitness, i);
+        }
+        if(func_n[0]==3)
+        {
+            dtlz3(xst, tam_pos, xst_fitness, i);
+        }
+        if(func_n[0]==4)
+        {
+            dtlz4(xst, tam_pos, xst_fitness, i);
+        }
+        if(func_n[0]==5)
+        {
+            dtlz5(xst, tam_pos, xst_fitness, i);
+        }
+        if(func_n[0]==6)
+        {
+            dtlz6(xst, tam_pos, xst_fitness, i);
+        }
+        if(func_n[0]==7)
+        {
+            dtlz7(xst, tam_pos, xst_fitness, i);
+        }
+        if(func_n[0] == 21)
+        {
+            wfg1(xst, tam_pos, xst_fitness, i);
+        }
+        if(func_n[0] == 31)
+        {
+            mw1(xst, tam_pos, xst_fitness, i, alpha);
+        }
+        if(func_n[0] == 32)
+        {
+            mw2(xst, tam_pos, xst_fitness, i, alpha);
+        }
+        if(func_n[0] == 33)
+        {
+            mw3(xst, tam_pos, xst_fitness, i, alpha);
+        }
+        if(func_n[0] == 34)
+        {
+            mw4(xst, tam_pos, xst_fitness, i, alpha);
+        }
+        if(func_n[0] == 35)
+        {
+            mw5(xst, tam_pos, xst_fitness, i, alpha);
+        }
+        if(func_n[0] == 36)
+        {
+            mw6(xst, tam_pos, xst_fitness, i, alpha);
+        }
+        if(func_n[0] == 37)
+        {
+            mw7(xst, tam_pos, xst_fitness, i, alpha);
+        }
+        if(func_n[0] == 39)
+        {
+            mw9(xst, tam_pos, xst_fitness, i, alpha);
+        }
+        if(func_n[0] == 310)
+        {
+            mw10(xst, tam_pos, xst_fitness, i, alpha);
         }
 
-        for(j=0;j<tam_fit[0];j++)
+    //     verificar se xst domina a particula i
+        if(a_dominate_b(xst_fitness+(i*tam_fit[0]), fitness+(i*tam_fit[0]), tam_fit[0], maximize))
         {
-            fitness[i*tam_fit[0]+j] = xst_fitness[i*tam_fit[0]+j];
+            xst_dominate[i] = 1;
+            for(j=0;j<tam_pos[0];j++)
+            {
+                position[i*tam_pos[0]+j] = xst[i*tam_pos[0]+j];
+            }
+
+            for(j=0;j<tam_fit[0];j++)
+            {
+                fitness[i*tam_fit[0]+j] = xst_fitness[i*tam_fit[0]+j];
+            }
+
+            update_from_differential_mutation[i] = 1;
+
+            update_personal_best4_validation(personal_best_p, personal_best_v, personal_best_f, tam_fit,
+            tam_pos, position, fitness, personal_guide_array_size, maximize);
         }
-
-        update_from_differential_mutation[i] = 1;
-
-        update_personal_best4_validation(personal_best_p, personal_best_v, personal_best_f, tam_fit,
-        tam_pos, position, fitness, personal_guide_array_size, maximize);
     }
 }
 
