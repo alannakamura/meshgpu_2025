@@ -1901,13 +1901,15 @@ class MESH:
                     if tam_front0[0] <= self.params.memory_size:
                         cuda.memcpy_htod(self.params.current_memory_size_g, tam_front0)
 
+                        div = int(np.ceil(tam_front0[0] / 1024))
+
                         # copia posicoes e fitness de front 0, que e o front 0 do conjunto front0_mem
                         # para vetores auxiliares
                         memory_inicialization2_1 = self.mod.get_function("memory_inicialization2_1")
                         memory_inicialization2_1(self.position_g, self.fitness_g, self.front0_g,
                                                  self.params.position_dim_g, self.params.objectives_dim_g,
                                                  self.params.population_size_g, self.aux_g, self.aux2_g,
-                                                 block=(int(tam_front0[0]), 1, 1), grid=(1, 1, 1))
+                                                 block=(int(tam_front0[0]/div), 1, 1), grid=(div, 1, 1))
                         cuda.Context.synchronize()
 
                         # move para as primeiras posicoes da memoria os valores dos vetores auxiliares
