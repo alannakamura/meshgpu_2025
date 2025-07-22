@@ -1780,9 +1780,14 @@ __global__ void memory_inicialization1(double *position, double *fitness, int *f
     }
 }
 
-__global__ void crowding_distance_inicialization(int* c)
+__global__ void crowding_distance_inicialization(int* c, int *tam_pop)
 {
-    c[threadIdx.x] = 0;
+    int i = blockIdx.x*blockDim.x+threadIdx.x;
+
+    if(i<tam_pop[0])
+    {
+         c[i] = 0;
+    }
 }
 
 __global__ void front_sort(int* front, int *dim, double *fitness, int *dim_fitness, int *i,
@@ -2166,39 +2171,47 @@ __global__ void memory_inicialization2(double *position, double *fitness, int *f
 }
 
 __global__ void memory_inicialization2_1(double *position, double *fitness, int *fronts,
- int *position_dim, int *objectives_dim, int *population_size, double *aux, double *aux2)
+ int *position_dim, int *objectives_dim, int *population_size, double *aux, double *aux2,
+ int *tam)
 {
-    int i = threadIdx.x, j, k;
+    int i = blockIdx.x*blockDim.x+threadIdx.x,j,k;
+//     int i = threadIdx.x, j, k;
     k = fronts[i];
 
-    for(j=0;j<position_dim[0];j++)
+    if(i<tam[0])
     {
-        aux[i*position_dim[0]+j] =
-        position[k*position_dim[0]+j];
-    }
-    for(j=0;j<objectives_dim[0];j++)
-    {
-        aux2[i*objectives_dim[0]+j] =
-        fitness[k*objectives_dim[0]+j];
+        for(j=0;j<position_dim[0];j++)
+        {
+            aux[i*position_dim[0]+j] =
+            position[k*position_dim[0]+j];
+        }
+        for(j=0;j<objectives_dim[0];j++)
+        {
+            aux2[i*objectives_dim[0]+j] =
+            fitness[k*objectives_dim[0]+j];
+        }
     }
 }
 
 __global__ void memory_inicialization2_2(double *position, double *fitness, int *fronts,
- int *position_dim, int *objectives_dim, int *population_size, double *aux, double *aux2)
+ int *position_dim, int *objectives_dim, int *population_size, double *aux, double *aux2,
+ int *tam)
 {
-    int i = threadIdx.x, j;
-//     int k;
-//     k = fronts[i];
+    int i = blockIdx.x*blockDim.x+threadIdx.x,j;
+//     int i = threadIdx.x, j;
 
-    for(j=0;j<position_dim[0];j++)
+    if(i<tam[0])
     {
-        position[(i+2*population_size[0])*position_dim[0]+j] =
-        aux[i*position_dim[0]+j];
-    }
-    for(j=0;j<objectives_dim[0];j++)
-    {
-        fitness[(i+2*population_size[0])*objectives_dim[0]+j] =
-        aux2[i*objectives_dim[0]+j];
+        for(j=0;j<position_dim[0];j++)
+        {
+            position[(i+2*population_size[0])*position_dim[0]+j] =
+            aux[i*position_dim[0]+j];
+        }
+        for(j=0;j<objectives_dim[0];j++)
+        {
+            fitness[(i+2*population_size[0])*objectives_dim[0]+j] =
+            aux2[i*objectives_dim[0]+j];
+        }
     }
 }
 
@@ -3349,6 +3362,45 @@ __global__ void copy2(double *vector, double *vector2)
 //     printf("%d %d\n", blockDim.y, blockDim.x*gridDim.x);
 }
 
+__global__ void copy_1d(int *vector, int *tam)
+{
+    int i = blockIdx.x*blockDim.x+threadIdx.x;
+
+    if(i<tam[0])
+    {
+        vector[i+tam[0]] = vector[i];
+    }
+}
+
+__global__ void copy_2d(double *vector, int *tam1, int *tam2)
+{
+    int i = blockIdx.x*blockDim.x+threadIdx.x;
+
+    if(i<tam1[0]*tam2[0])
+    {
+        vector[i+tam1[0]*tam2[0]] = vector[i];
+    }
+}
+
+__global__ void copy_2d_vv(double *vector, double *vector2, int *tam)
+{
+    int i = blockIdx.x*blockDim.x+threadIdx.x;
+
+    if(i<tam[0]*6)
+    {
+        vector2[i] = vector[i];
+    }
+}
+
+__global__ void copy_3d(double *vector, int *tam1, int *tam2, int *tam3)
+{
+    int i = blockIdx.x*blockDim.x+threadIdx.x;
+
+    if(i<tam1[0]*tam2[0]*tam3[0])
+    {
+        vector[i+tam1[0]*tam2[0]*tam3[0]] = vector[i];
+    }
+}
 __global__ void copy3(double *vector, double *vector2, int *tam)
 {
     int l = blockIdx.x*blockDim.x+threadIdx.x;
