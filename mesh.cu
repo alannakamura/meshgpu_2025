@@ -3346,21 +3346,21 @@ int *current_memory_size)
     }
 }
 
-__global__ void copy(double *vector)
-{
-    int l = blockIdx.x*blockDim.x+threadIdx.x;
-    int c = blockIdx.y*blockDim.y+threadIdx.y;
-    vector[(l+blockDim.x*gridDim.x)*blockDim.y+c] = vector[l*blockDim.y+c];
-//     printf("%d %d\n", blockDim.y, blockDim.x*gridDim.x);
-}
-
-__global__ void copy2(double *vector, double *vector2)
-{
-    int l = blockIdx.x*blockDim.x+threadIdx.x;
-    int c = blockIdx.y*blockDim.y+threadIdx.y;
-    vector2[l*blockDim.y*gridDim.y+c] = vector[l*blockDim.y*gridDim.y+c];
-//     printf("%d %d\n", blockDim.y, blockDim.x*gridDim.x);
-}
+// __global__ void copy(double *vector)
+// {
+//     int l = blockIdx.x*blockDim.x+threadIdx.x;
+//     int c = blockIdx.y*blockDim.y+threadIdx.y;
+//     vector[(l+blockDim.x*gridDim.x)*blockDim.y+c] = vector[l*blockDim.y+c];
+// //     printf("%d %d\n", blockDim.y, blockDim.x*gridDim.x);
+// }
+//
+// __global__ void copy2(double *vector, double *vector2)
+// {
+//     int l = blockIdx.x*blockDim.x+threadIdx.x;
+//     int c = blockIdx.y*blockDim.y+threadIdx.y;
+//     vector2[l*blockDim.y*gridDim.y+c] = vector[l*blockDim.y*gridDim.y+c];
+// //     printf("%d %d\n", blockDim.y, blockDim.x*gridDim.x);
+// }
 
 __global__ void copy_1d(int *vector, int *tam)
 {

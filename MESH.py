@@ -1986,224 +1986,67 @@ class MESH:
                 start = dt.now()
                 if self.gpu:
 
+                    # versao 220725
+                    # copia de rank
+                    copy = self.mod.get_function("copy_1d")
+                    div = int(np.ceil(self.params.population_size / 1024))
+                    copy(self.rank_g, self.params.population_size_g,
+                         block=(int(np.ceil(self.params.population_size / div)), 1, 1),
+                         grid=(div, 1, 1))
+                    cuda.Context.synchronize()
+
                     # copia de position
-                    div = int(self.params.population_size / 64)
-                    # div = 1
-                    copy2 = self.mod.get_function("copy")
-                    copy2(self.position_g,
-                          block=(int(self.params.population_size / div), self.params.position_dim, 1),
-                          grid=(div, 1, 1))
+                    div = int(np.ceil(self.params.population_size*self.params.position_dim/1024))
+                    copy = self.mod.get_function("copy_2d")
+                    copy(self.position_g, self.params.population_size_g, self.params.position_dim_g,
+                          block=(int(np.ceil(self.params.population_size*self.params.position_dim / div)),
+                          1, 1), grid=(div, 1, 1))
                     cuda.Context.synchronize()
 
                     # copia de fitness
-                    copy2(self.fitness_g,
-                          block=(int(self.params.population_size / div), self.params.objectives_dim, 1),
-                          grid=(div, 1, 1))
+                    div = int(np.ceil(self.params.population_size * self.params.objectives_dim / 1024))
+                    copy(self.fitness_g, self.params.population_size_g, self.params.objectives_dim_g,
+                         block=(int(np.ceil(self.params.population_size * self.params.objectives_dim / div)),
+                                1, 1), grid=(div, 1, 1))
                     cuda.Context.synchronize()
-
-                    # teste = np.zeros(128 * 3 * 3, dtype=np.float64)
-                    # cuda.memcpy_dtoh(teste, self.position_g)
-                    # teste.shape = 384, 3
-                    # cuda.Context.synchronize()
-                    # print(teste, div)
-                    #
-                    # teste2 = np.zeros(128 * 3 * 3, dtype=np.float64)
-                    # cuda.memcpy_dtoh(teste2, self.fitness_g)
-                    # teste2.shape = 384, 3
-                    # cuda.Context.synchronize()
-                    # print(teste2, div)
-
-                    # teste = np.zeros(128 * 3 * 3, dtype=np.float64)
-                    # cuda.memcpy_dtoh(teste, self.position_g)
-                    # teste.shape = 384, 3
-                    # cuda.Context.synchronize()
-                    # print(teste, div)
-                    #
-                    # teste2 = np.zeros(128 * 3 * 3, dtype=np.float64)
-                    # cuda.memcpy_dtoh(teste2, self.fitness_g)
-                    # teste2.shape = 384, 3
-                    # cuda.Context.synchronize()
-                    # print(teste2, div)
-
-                    # copia de rank
-                    copy2(self.rank_g,
-                          block=(int(self.params.population_size / div), 1, 1),
-                          grid=(div, 1, 1))
-                    cuda.Context.synchronize()
-
-                    # teste = np.zeros(128 * 3 * 3, dtype=np.float64)
-                    # cuda.memcpy_dtoh(teste, self.position_g)
-                    # teste.shape = 384, 3
-                    # cuda.Context.synchronize()
-                    # print(teste, div)
-                    #
-                    # teste2 = np.zeros(128 * 3 * 3, dtype=np.float64)
-                    # cuda.memcpy_dtoh(teste2, self.fitness_g)
-                    # teste2.shape = 384, 3
-                    # cuda.Context.synchronize()
-                    # print(teste2, div)
 
                     # copia de velocity
-                    copy2(self.velocity_g,
-                          block=(int(self.params.population_size / div), self.params.position_dim, 1),
-                          grid=(div, 1, 1))
+                    div = int(np.ceil(self.params.population_size * self.params.position_dim / 1024))
+                    copy(self.velocity_g, self.params.population_size_g, self.params.position_dim_g,
+                         block=(int(np.ceil(self.params.population_size*self.params.position_dim / div)),
+                         1, 1), grid=(div, 1, 1))
                     cuda.Context.synchronize()
 
                     # copia de personal_best
-                    # div = 8
-                    div = int(self.params.population_size / 16)
-                    copy2(self.personal_best_position_g,
-                          block=(int(self.params.population_size / div),
-                                 self.params.position_dim * self.params.personal_guide_array_size, 1),
-                          grid=(div, 1, 1))
+                    copy = self.mod.get_function("copy_3d")
+                    div = int(np.ceil(self.params.population_size*self.params.personal_guide_array_size*
+                              self.params.position_dim/1024))
+                    copy(self.personal_best_position_g, self.params.position_dim_g,
+                          self.params.personal_guide_array_size_g, self.params.population_size_g,
+                          block=(int(np.ceil(self.params.population_size*self.params.position_dim *
+                                     self.params.personal_guide_array_size / div)),
+                          1, 1), grid=(div, 1, 1))
                     cuda.Context.synchronize()
 
-                    # div = 2
-                    div = int(self.params.population_size / 64)
-                    copy2(self.personal_best_fitness_g,
-                          block=(int(self.params.population_size / div),
-                                 self.params.objectives_dim * self.params.personal_guide_array_size, 1),
-                          grid=(div, 1, 1))
+                    div = int(np.ceil(self.params.population_size *
+                                      self.params.personal_guide_array_size *
+                                      self.params.objectives_dim / 1024))
+                    copy(self.personal_best_fitness_g,
+                         block=(int(np.ceil(self.params.population_size * self.params.objectives_dim *
+                                            self.params.personal_guide_array_size / div)),
+                                1, 1), grid=(div, 1, 1))
                     cuda.Context.synchronize()
 
-                    div = int(self.params.population_size / 128)
-                    copy2 = self.mod.get_function("copy2")
-                    copy2(self.weights_g, self.weights_copy_g,
-                          block=(6, int(self.params.population_size / div), 1),
-                          grid=(1, div, 1))
+                    # copia de weights
+                    copy = self.mod.get_function("copy_2d_vv")
+
+                    div = int(np.ceil(self.params.population_size * 6 / 1024))
+                    copy(self.weights_g, self.weights_copy_g, self.params.population_size_g,
+                         block=(int(np.ceil(self.params.population_size * 6 / div)), 1, 1),
+                         grid=(div, 1, 1))
                     cuda.Context.synchronize()
 
-
-                    # versao 200725
-                    # copia de rank
-                    # copy = self.mod.get_function("copy_1d")
-                    # div = int(np.ceil(self.params.population_size / 1024))
-                    # copy(self.rank_g, self.params.population_size_g,
-                    #      block=(int(np.ceil(self.params.population_size / div)), 1, 1),
-                    #      grid=(div, 1, 1))
-                    # cuda.Context.synchronize()
-                    #
-                    # # teste = np.zeros(128*2, dtype=np.int32)
-                    # # cuda.memcpy_dtoh(teste, self.rank_g)
-                    # # cuda.Context.synchronize()
-                    # # print(teste, div)
-
-                    # teste = np.zeros(128 * 3 * 3, dtype=np.float64)
-                    # cuda.memcpy_dtoh(teste, self.position_g)
-                    # teste.shape = 384, 3
-                    # cuda.Context.synchronize()
-                    # print(teste, div)
-                    #
-                    # teste2 = np.zeros(128 * 3 * 3, dtype=np.float64)
-                    # cuda.memcpy_dtoh(teste2, self.fitness_g)
-                    # teste2.shape = 384, 3
-                    # cuda.Context.synchronize()
-                    # print(teste2, div)
-
-                    # copia de position
-                    # div = int(np.ceil(self.params.population_size*self.params.position_dim/1024))
-                    # copy = self.mod.get_function("copy_2d")
-                    # copy(self.position_g, self.params.population_size_g, self.params.position_dim_g,
-                    #       block=(int(np.ceil(self.params.population_size*self.params.position_dim / div)),
-                    #       1, 1), grid=(div, 1, 1))
-                    # cuda.Context.synchronize()
-
-                    # teste = np.zeros(128 * 3 *3, dtype=np.float64)
-                    # cuda.memcpy_dtoh(teste, self.position_g)
-                    # teste.shape = 384, 3
-                    # cuda.Context.synchronize()
-                    # print(teste, div)
-                    #
-                    # teste2 = np.zeros(128 * 3 * 3, dtype=np.float64)
-                    # cuda.memcpy_dtoh(teste2, self.fitness_g)
-                    # teste2.shape = 384, 3
-                    # cuda.Context.synchronize()
-                    # print(teste2, div)
-
-                    # copia de fitness
-                    # div = int(np.ceil(self.params.population_size * self.params.objectives_dim / 1024))
-                    # copy(self.fitness_g, self.params.population_size_g, self.params.objectives_dim_g,
-                    #      block=(int(np.ceil(self.params.population_size * self.params.objectives_dim / div)),
-                    #             1, 1), grid=(div, 1, 1))
-                    # cuda.Context.synchronize()
-
-                    # teste2 = np.zeros(128 * 3 * 3, dtype=np.float64)
-                    # cuda.memcpy_dtoh(teste2, self.fitness_g)
-                    # teste2.shape = 384, 3
-                    # cuda.Context.synchronize()
-                    # print(teste2, div)
-
-                    # copia de velocity
-                    # copy(self.velocity_g, self.params.population_size_g, self.params.position_dim_g,
-                    #      block=(int(np.ceil(self.params.population_size*self.params.position_dim / div)),
-                    #      1, 1), grid=(div, 1, 1))
-                    # cuda.Context.synchronize()
-                    #
-                    # # teste2 = np.zeros(128 * 3 * 3, dtype=np.float64)
-                    # # cuda.memcpy_dtoh(teste2, self.velocity_g)
-                    # # teste2.shape = 384, 3
-                    # # cuda.Context.synchronize()
-                    # # print(teste2, div)
-                    #
-
-                    #
-                    # # teste2 = np.zeros(128 * 3 * 3, dtype=np.float64)
-                    # # cuda.memcpy_dtoh(teste2, self.fitness_g)
-                    # # teste2.shape = 384, 3
-                    # # cuda.Context.synchronize()
-                    # # print(teste2, div)
-                    #
-                    # copia de personal_best
-                    # copy = self.mod.get_function("copy_3d")
-                    # div = int(np.ceil(self.params.population_size*self.params.personal_guide_array_size*
-                    #           self.params.position_dim/1024))
-                    # copy(self.personal_best_position_g, self.params.position_dim_g,
-                    #       self.params.personal_guide_array_size_g, self.params.population_size_g,
-                    #       block=(int(np.ceil(self.params.population_size*self.params.position_dim *
-                    #                  self.params.personal_guide_array_size / div)),
-                    #       1, 1), grid=(div, 1, 1))
-                    # cuda.Context.synchronize()
-                    #
-                    # # teste2 = np.zeros(128 * 3 * 3 * 3, dtype=np.float64)
-                    # # cuda.memcpy_dtoh(teste2, self.personal_best_position_g)
-                    # # teste2.shape = 384, 3, 3
-                    # # cuda.Context.synchronize()
-                    # # print(teste2, div)
-                    #
-
-                    # div = int(np.ceil(self.params.population_size *
-                    #                   self.params.personal_guide_array_size *
-                    #                   self.params.objectives_dim / 1024))
-                    # copy(self.personal_best_fitness_g,
-                    #      block=(int(np.ceil(self.params.population_size * self.params.objectives_dim *
-                    #                         self.params.personal_guide_array_size / div)),
-                    #             1, 1), grid=(div, 1, 1))
-                    # cuda.Context.synchronize()
-                    #
-                    # # teste2 = np.zeros(128 * 3 * 3 * 3, dtype=np.float64)
-                    # # cuda.memcpy_dtoh(teste2, self.personal_best_fitness_g)
-                    # # teste2.shape = 384, 3, 3
-                    # # cuda.Context.synchronize()
-                    # # print(teste2, div)
-                    #
-                    # # copia de weights2
-                    # copy = self.mod.get_function("copy_2d_vv")
-                    #
-                    # div = int(np.ceil(self.params.population_size * 6 / 1024))
-                    # copy(self.weights_g, self.weights_copy_g, self.params.population_size_g,
-                    #      block=(int(np.ceil(self.params.population_size * 6 / div)), 1, 1),
-                    #      grid=(div, 1, 1))
-                    # cuda.Context.synchronize()
-                    #
-                    # # teste = np.zeros(128 * 6, dtype=np.float64)
-                    # # teste2 = np.zeros(128 * 6, dtype=np.float64)
-                    # # cuda.memcpy_dtoh(teste, self.weights_g)
-                    # # cuda.memcpy_dtoh(teste2, self.weights_copy_g)
-                    # # cuda.Context.synchronize()
-                    # # print(teste, teste2, div)
-                    # pass
-
-
+                # parei aqui em 220725
                 gpu[2] += (dt.now() - start).total_seconds()
 
                 start = dt.now()

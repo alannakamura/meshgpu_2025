@@ -1,0 +1,10 @@
+teste = np.zeros(128*2, dtype=np.int32)
+cuda.memcpy_dtoh(teste, self.rank_g)
+cuda.Context.synchronize()
+print(teste, div)
+
+teste2 = np.zeros(128 * 3 * 3, dtype=np.float64)
+cuda.memcpy_dtoh(teste2, self.velocity_g)
+teste2.shape = 384, 3
+cuda.Context.synchronize()
+print(teste2, div)
