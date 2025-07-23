@@ -2352,7 +2352,7 @@ int *tam_obj, int *tam_pos, double *position, double *fitness, int *personal_gui
 __global__ void update_personal_best3(double *personal_best_p, double *personal_best_v, double *personal_best_f,
 int *tam_obj, int *tam_pos, double *position, double *fitness, int *personal_guide_array_size, int *maximize)
 {
-    int i = threadIdx.x, j, k;
+    int i = blockIdx.x*blockDim.x+threadIdx.x, j, k;
     int tam1 = personal_guide_array_size[0]*tam_pos[0];
     int tam2 = personal_guide_array_size[0]*tam_obj[0];
     int include=0, dominated=0;
@@ -2436,35 +2436,12 @@ int *tam_obj, int *tam_pos, double *position, double *fitness, int *personal_gui
                 }
                 include = 1;
             }
-//             if(i==3)
-//             {
-//                 printf("k=%d ex=%d df=%d ins=%d dom=%d inc=%d\n",
-//                  k, exist, different, inset, dominated, include);
-//             }
         }
-//         if(i==3)
-//         {
-//             printf("k=%d ex=%d df=%d ins=%d dom=%d inc=%d\n",
-//              k, exist, different, inset, dominated, include);
-//         }
     }
-//     if(i==2)
-//     {
-//         printf("%d %d %d %d %d\n",i,k, include, follow, dominated);
-//     }
     if((include || !dominated) && inset)
     {
-//         printf("%d\n", i);
         for(k=0;k<personal_guide_array_size[0];k++)
         {
-//             if(i==3)
-//             {
-//                 for(j=0;j<tam_pos[0];j++)
-//                 {
-//                     printf("%lf ", personal_best_p[i*tam1+k*tam_pos[0]+j]);
-//                 }
-//                 printf("%d \n", k);
-//             }
             if(personal_best_p[i*tam1+k*tam_pos[0]+0] == 1e10)
             {
                 for(j=0;j<tam_pos[0];j++)
@@ -2484,245 +2461,108 @@ int *tam_obj, int *tam_pos, double *position, double *fitness, int *personal_gui
 __global__ void update_personal_best3_validation(double *personal_best_p, double *personal_best_v, double *personal_best_f,
 int *tam_obj, int *tam_pos, double *position, double *fitness, int *personal_guide_array_size, int *maximize)
 {
-//     int l=0;
-    int i = threadIdx.x, j, k;
+    int i = blockIdx.x*blockDim.x+threadIdx.x, j, k;
     int tam1 = personal_guide_array_size[0]*tam_pos[0];
     int tam2 = personal_guide_array_size[0]*tam_obj[0];
     int include=0, dominated=0, full=1;
     short int exist, different, inset=0;
-//     short int follow = 0;
 
-    // exist: se a aquela posicao existe uma particula. O indicador 1e10 na posicao 0 indica que nao existe
-    // different: indica se o elemento do eprsonal best e diferent da particula atualiza
-    // inset: indica se a particula ja esta no conjunto personal best
-
-//     if(i == 38)
-//     {
-//         for(k=0; k < personal_guide_array_size[0]; k++)
-//         {
-//             for(j=0;j<10;j++)
-//             {
-//                 printf("%lf ", personal_best_p[i*tam1+k*tam_pos[0]+j]);
-//             }
-//             printf("\n");
-//         }
-//     }
-
-//     dominated = personal_guide_array_size[0];
-    for(k=0;k<personal_guide_array_size[0];k++)
+    if(i<tam_pos[0])
     {
-//         if(i==38)
-//         {
-//             printf("%d\n", k);
-//         }
-//         follow = 0;
-//         if(i==38)
-//         {
-//             printf("%d %lf %d\n", k, personal_best_p[i*tam1+k*tam_pos[0]+0], i*tam1+k*tam_pos[0]+0);
-//         }
-        if(personal_best_p[i*tam1+k*tam_pos[0]+0] != 1e10)
+        for(k=0;k<personal_guide_array_size[0];k++)
         {
-//             if(i==38)
-//             {
-//                 printf("%d\n", k, personal_best_p[i*tam1+k*tam_pos[0]+0]);
-//             }
-            exist=1;
-            different=0;
-            for(j=0;j<tam_pos[0];j++)
+            if(personal_best_p[i*tam1+k*tam_pos[0]+0] != 1e10)
             {
-//                 if(i==2)
-//                 {
-//                     printf("j=%d pos=%lf per=%lf\n",j, position[i*tam_pos[0]+j],personal_best_p[i*tam1+k*tam_pos[0]+j]);
-//                 }
-                if(position[i*tam_pos[0]+j]!= personal_best_p[i*tam1+k*tam_pos[0]+j])
+                exist=1;
+                different=0;
+                for(j=0;j<tam_pos[0];j++)
                 {
-//                     if(i==2)
-//                     {
-//                         printf("j=%d pos=%lf per=%lf\n",j, position[i*tam_pos[0]+j],personal_best_p[i*tam1+k*tam_pos[0]+j]);
-//                     }
-                    different++;
+                    if(position[i*tam_pos[0]+j]!= personal_best_p[i*tam1+k*tam_pos[0]+j])
+                    {
+                        different++;
+                        break;
+                    }
+                }
+                inset+=different;
+            }
+            else
+            {
+                exist = 0;
+            }
+            if(exist==1 && different == 1)
+            {
+                dominated++;
+                if(a_dominate_b(personal_best_f+(i*tam2+k*tam_obj[0]), fitness+(i*tam_obj[0]),
+                tam_obj[0], maximize) == 0)
+                {
+                    dominated--;
+                }
+                if(a_dominate_b(fitness+(i*tam_obj[0]), personal_best_f+(i*tam2+k*tam_obj[0]),
+                tam_obj[0], maximize))
+                {
+                    for(j=0;j<tam_pos[0];j++)
+                    {
+                        personal_best_p[i*tam1+k*tam_pos[0]+j] = 1e10;
+                    }
+                    include = 1;
+                }
+            }
+        }
+
+        //para validacao. Apagar depois para maior eficiencia
+        for(k=0; k < personal_guide_array_size[0]-1; k++)
+        {
+            if(personal_best_p[i*tam1+k*tam_pos[0]] == 1e10)
+            {
+                for(int l=k+1; l<personal_guide_array_size[0]; l++)
+                {
+                    for(j=0;j<tam_pos[0];j++)
+                    {
+                        personal_best_p[i*tam1+(l-1)*tam_pos[0]+j] =
+                        personal_best_p[i*tam1+(l)*tam_pos[0]+j];
+                    }
+                    for(j=0;j<tam_obj[0];j++)
+                    {
+                        personal_best_f[i*tam2+(l-1)*tam_obj[0]+j] =
+                        personal_best_f[i*tam2+(l)*tam_obj[0]+j];
+                    }
+                }
+                personal_best_p[i*tam1+(personal_guide_array_size[0]-1)*tam_pos[0]] = 1e10;
+            }
+        }
+
+        if((include || !dominated) && inset)
+        {
+            for(k=0;k<personal_guide_array_size[0];k++)
+            {
+                if(personal_best_p[i*tam1+k*tam_pos[0]+0] == 1e10)
+                {
+                    full = 0;
+                    for(j=0;j<tam_pos[0];j++)
+                    {
+                        personal_best_p[i*tam1+k*tam_pos[0]+j] = position[i*tam_pos[0]+j];
+                    }
+                    for(j=0;j<tam_obj[0];j++)
+                    {
+                        personal_best_f[i*tam2+k*tam_obj[0]+j] = fitness[i*tam_obj[0]+j];
+                    }
                     break;
                 }
             }
-            inset+=different;
-        }
-        else
-        {
-            exist = 0;
-        }
-//         if(i==3)
-//         {
-//             printf("k=%d ex=%d df=%d ins=%d\n", k, exist, different, inset);
-//         }
-//         dominated--;
-
-//         if(i==2)
-//         {
-//             printf("i=%d k=%d exist=%d dif = %d\n",i,k,exist, different);
-//         }
-//         if(i==64+128)
-//         {
-//             printf("i=%d k=%d exist=%d diff=%d\n",i,k, exist, different);
-//         }
-        if(exist==1 && different == 1)
-        {
-            dominated++;
-//             if(i==64+128)
-//             {
-//                 printf("i=%d k=%d exist=%d diff=%d\n",i,k, exist, different);
-//             }
-//             if(i==64+128)
-//             {
-//                 for(l=0;l<2;l++)
-//                 {
-//                     printf("%0.16lf %0.16lf\n",personal_best_f[i*tam2+k*tam_obj[0]+0],
-//                      personal_best_f[i*tam2+k*tam_obj[0]+1]);
-//                 }
-//             }
-//             if(i==64+128)
-//             {
-//                 for(l=0;l<2;l++)
-//                 {
-//                     printf("%0.16lf %0.16f\n",fitness[i*tam_obj[0]+0],
-//                     fitness[i*tam_obj[0]+1]);
-//                 }
-//             }
-            if(a_dominate_b(personal_best_f+(i*tam2+k*tam_obj[0]), fitness+(i*tam_obj[0]),
-            tam_obj[0], maximize) == 0)
+            if(full == 1)
             {
-                dominated--;
-            }
-            if(a_dominate_b(fitness+(i*tam_obj[0]), personal_best_f+(i*tam2+k*tam_obj[0]),
-            tam_obj[0], maximize))
-            {
-                for(j=0;j<tam_pos[0];j++)
+                for(k=0;k<personal_guide_array_size[0]-1;k++)
                 {
-                    personal_best_p[i*tam1+k*tam_pos[0]+j] = 1e10;
+                    for(j=0;j<tam_pos[0];j++)
+                    {
+                        personal_best_p[i*tam1+k*tam_pos[0]+j] = personal_best_p[i*tam1+(k+1)*tam_pos[0]+j];
+                    }
+                    for(j=0;j<tam_obj[0];j++)
+                    {
+                        personal_best_f[i*tam2+k*tam_obj[0]+j] = personal_best_f[i*tam2+(k+1)*tam_obj[0]+j];
+                    }
                 }
-                //para validacao. Apagar depois para maior eficiencia
-//                 if(k<personal_guide_array_size[0]-1)
-//                 {
-//                     for(int l=k+1; l<personal_guide_array_size[0]; l++)
-//                     {
-//                         for(j=0;j<tam_pos[0];j++)
-//                         {
-//                             personal_best_p[i*tam1+(l-1)*tam_pos[0]+j] =
-//                             personal_best_p[i*tam1+(l)*tam_pos[0]+j];
-//                         }
-//                         for(j=0;j<tam_obj[0];j++)
-//                         {
-//                             personal_best_f[i*tam2+(l-1)*tam_obj[0]+j] =
-//                             personal_best_f[i*tam2+(l)*tam_obj[0]+j];
-//                         }
-//                     }
-//                 }
-                include = 1;
-            }
-//             if(i==3)
-//             {
-//                 printf("k=%d ex=%d df=%d ins=%d dom=%d inc=%d\n",
-//                  k, exist, different, inset, dominated, include);
-//             }
-        }
-//         if(i==3)
-//         {
-//             printf("k=%d ex=%d df=%d ins=%d dom=%d inc=%d\n",
-//              k, exist, different, inset, dominated, include);
-//         }
-    }
-//     if(i==2)
-//     {
-//         printf("%d %d %d %d %d\n",i,k, include, follow, dominated);
-//     }
-
-//     if(i == 38)
-//     {
-//         for(k=0; k < personal_guide_array_size[0]; k++)
-//         {
-//             for(j=0;j<10;j++)
-//             {
-//                 printf("%lf ", personal_best_p[i*tam1+k*tam_pos[0]+j]);
-//             }
-//             printf("\n");
-//         }
-//     }
-
-//     if(i==70)
-//     {
-//         for(k=0;k<personal_guide_array_size[0];k++)
-//         {
-//             for(j=0;j<tam_pos[0];j++)
-//             {
-//                 printf("%lf ", personal_best_p[i*tam1+k*tam_pos[0]+j]);
-//             }
-//             printf("\n");
-// //             for(j=0;j<tam_obj[0];j++)
-// //             {
-// //                 printf("%lf ", personal_best_f[i*tam2+k*tam_obj[0]+j]);
-// //             }
-// //             printf("\n");
-//         }
-//     }
-
-    //para validacao. Apagar depois para maior eficiencia
-    for(k=0; k < personal_guide_array_size[0]-1; k++)
-    {
-        if(personal_best_p[i*tam1+k*tam_pos[0]] == 1e10)
-        {
-            for(int l=k+1; l<personal_guide_array_size[0]; l++)
-            {
-                for(j=0;j<tam_pos[0];j++)
-                {
-                    personal_best_p[i*tam1+(l-1)*tam_pos[0]+j] =
-                    personal_best_p[i*tam1+(l)*tam_pos[0]+j];
-                }
-                for(j=0;j<tam_obj[0];j++)
-                {
-                    personal_best_f[i*tam2+(l-1)*tam_obj[0]+j] =
-                    personal_best_f[i*tam2+(l)*tam_obj[0]+j];
-                }
-            }
-            personal_best_p[i*tam1+(personal_guide_array_size[0]-1)*tam_pos[0]] = 1e10;
-        }
-    }
-
-//     if(i==70)
-//     {
-//         for(k=0;k<personal_guide_array_size[0];k++)
-//         {
-//             for(j=0;j<tam_pos[0];j++)
-//             {
-//                 printf("%lf ", personal_best_p[i*tam1+k*tam_pos[0]+j]);
-//             }
-//             printf("\n");
-// //             for(j=0;j<tam_obj[0];j++)
-// //             {
-// //                 printf("%lf ", personal_best_f[i*tam2+k*tam_obj[0]+j]);
-// //             }
-// //             printf("\n");
-//         }
-//     }
-
-//     if(i==64+128)
-//     {
-//         printf("i=%d dom=%d include=%d\n",i, dominated, include);
-//     }
-    if((include || !dominated) && inset)
-    {
-//         printf("%d\n", i);
-        for(k=0;k<personal_guide_array_size[0];k++)
-        {
-//             if(i==3)
-//             {
-//                 for(j=0;j<tam_pos[0];j++)
-//                 {
-//                     printf("%lf ", personal_best_p[i*tam1+k*tam_pos[0]+j]);
-//                 }
-//                 printf("%d \n", k);
-//             }
-            if(personal_best_p[i*tam1+k*tam_pos[0]+0] == 1e10)
-            {
-                full = 0;
+                k = personal_guide_array_size[0]-1;
                 for(j=0;j<tam_pos[0];j++)
                 {
                     personal_best_p[i*tam1+k*tam_pos[0]+j] = position[i*tam_pos[0]+j];
@@ -2731,30 +2571,6 @@ int *tam_obj, int *tam_pos, double *position, double *fitness, int *personal_gui
                 {
                     personal_best_f[i*tam2+k*tam_obj[0]+j] = fitness[i*tam_obj[0]+j];
                 }
-                break;
-            }
-        }
-        if(full == 1)
-        {
-            for(k=0;k<personal_guide_array_size[0]-1;k++)
-            {
-                for(j=0;j<tam_pos[0];j++)
-                {
-                    personal_best_p[i*tam1+k*tam_pos[0]+j] = personal_best_p[i*tam1+(k+1)*tam_pos[0]+j];
-                }
-                for(j=0;j<tam_obj[0];j++)
-                {
-                    personal_best_f[i*tam2+k*tam_obj[0]+j] = personal_best_f[i*tam2+(k+1)*tam_obj[0]+j];
-                }
-            }
-            k = personal_guide_array_size[0]-1;
-            for(j=0;j<tam_pos[0];j++)
-            {
-                personal_best_p[i*tam1+k*tam_pos[0]+j] = position[i*tam_pos[0]+j];
-            }
-            for(j=0;j<tam_obj[0];j++)
-            {
-                personal_best_f[i*tam2+k*tam_obj[0]+j] = fitness[i*tam_obj[0]+j];
             }
         }
     }
@@ -3586,13 +3402,14 @@ int *rank, int *tam_pop, int *tam_mem, int *tam_fit, int *global_best, double *f
 __global__ void move_particle(double *weights, double *weights_copy, double *personal_best_p, double *position,
 double *velocity, int *personal_guide_array_size,
 double *communication_probability, int *global_best, double *velocity_max_value,
-double *velocity_min_value, int *seed)
+double *velocity_min_value, int *seed, int *tam_pop2, int *tam_pos2)
 {
     int i = blockIdx.x*blockDim.x+threadIdx.x;
-    int j = threadIdx.y;
+    int j = blockIdx.y*blockDim.y+threadIdx.y;
+//     int j = threadIdx.y;
     int k;
-    int tam_pop = blockDim.x*gridDim.x;
-    int tam_pos = blockDim.y;
+    int tam_pop = tam_pop2[0];
+    int tam_pos = tam_pos2[0];
     double cooperation_term=0, temp1, temp2, temp3;
     int whatPersonal_l = 0;
     int whatPersonal_l_2 = 0;
@@ -3602,233 +3419,102 @@ double *velocity_min_value, int *seed)
     double communication_copy_l[1000];
     curandState state;
 
-    curand_init(seed[0], i, 0, &state);
-
-    cooperation_rand_l = curand_uniform(&state);
-    cooperation_rand_l_2 = curand_uniform(&state);
-
-    for(k=0;k<tam_pos;k++)
+    if(i<tam_pop && j<tam_pos)
     {
-        communication_l[k] = curand_uniform(&state);
-        communication_copy_l[k] = curand_uniform(&state);
+        curand_init(seed[0], i, 0, &state);
+
+        cooperation_rand_l = curand_uniform(&state);
+        cooperation_rand_l_2 = curand_uniform(&state);
+
+        for(k=0;k<tam_pos;k++)
+        {
+            communication_l[k] = curand_uniform(&state);
+            communication_copy_l[k] = curand_uniform(&state);
+        }
+
+        if(communication_l[j]<communication_probability[0])
+        {
+            cooperation_term = weights[3*tam_pop+i]*cooperation_rand_l+1;
+            cooperation_term *= position[global_best[i]*tam_pos+j];
+            cooperation_term -= position[i*tam_pos+j];
+            cooperation_term *= weights[2*tam_pop+i];
+        }
+        temp1 = velocity[i*tam_pos+j]*weights[0*tam_pop+i];
+        temp2 = weights[1*tam_pop+i]*(personal_best_p[i*personal_guide_array_size[0]*tam_pos+
+        whatPersonal_l*tam_pos+j] - position[i*tam_pos+j]);
+        temp3 = cooperation_term;
+
+        velocity[i*tam_pos+j] = temp1+temp2+temp3;
+        if(velocity[i*tam_pos+j]<velocity_min_value[j])
+        {
+            velocity[i*tam_pos+j]=velocity_min_value[j];
+        }
+        if(velocity[i*tam_pos+j]>velocity_max_value[j])
+        {
+            velocity[i*tam_pos+j]=velocity_max_value[j];
+        }
+
+        if(communication_copy_l[j]<communication_probability[0])
+        {
+            cooperation_term = weights_copy[3*tam_pop+i]*cooperation_rand_l_2+1;
+            cooperation_term *= position[global_best[i+tam_pop]*tam_pos+j];
+            cooperation_term -= position[(i+tam_pop)*tam_pos+j];
+            cooperation_term *= weights_copy[2*tam_pop+i];
+        }
+        else
+        {
+            cooperation_term = 0;
+        }
+
+        temp1  = velocity[(i+tam_pop)*tam_pos+j]*weights_copy[0*tam_pop+i];
+        temp2  = weights_copy[1*tam_pop+i]*(personal_best_p[i*
+        personal_guide_array_size[0]*tam_pos+whatPersonal_l_2*tam_pos+j] -
+        position[(i+tam_pop)*tam_pos+j]);
+        velocity[(i+tam_pop)*tam_pos+j] = temp1+temp2+cooperation_term;
+
+        if(velocity[(i+tam_pop)*tam_pos+j]<velocity_min_value[j])
+        {
+            velocity[(i+tam_pop)*tam_pos+j]=velocity_min_value[j];
+        }
+        if(velocity[(i+tam_pop)*tam_pos+j]>velocity_max_value[j])
+        {
+            velocity[(i+tam_pop)*tam_pos+j]=velocity_max_value[j];
+        }
     }
-
-//     printf("tam = %d %d %d %d\n", tam_pop, tam_pos, i, j);
-//             if is_copy:
-//             weights = self.weights_copy
-//         else:
-//             weights = self.weights
-//
-//         personal_best_pos = particle.personal_best[np.random.choice(len(particle.personal_best))].position
-//
-//         inertia_term = np.asarray(particle.velocity) * weights[0][particle_index]
-//
-//         memory_term = weights[1][particle_index]*(np.asarray(personal_best_pos) - np.asarray(particle.position))
-//
-//         communication = (np.random.uniform(0.0, 1.0, self.params.position_dim) < self.params.communication_probability) * 1
-//         # nao entendi o por que de multiplicar o global best por 1+(entre 0 e 1)*w3
-//         cooperation_term = weights[2][particle_index] * (np.asarray(particle.global_best.position)
-//         * (1 + (weights[3][particle_index] * np.random.normal(0,1)) ) - np.asarray(particle.position))
-//         cooperation_term = cooperation_term * communication
-//
-//     if(i == 0 && j==0)
-//     {
-//         printf("%lf %lf %lf %lf\n",velocity[i*tam_pos+j], velocity[(i+tam_pop)*tam_pos+j]
-//         , weights[0*tam_pop+i], weights_copy[0*tam_pop+i]);
-//         printf("%lf %lf %d %lf\n",velocity[(i+tam_pop)*tam_pos+j], weights[0*tam_pop+i]
-//         , (i+tam_pop)*tam_pos+j, weights_copy[0*tam_pop+i]);
-//         for(int j=0;j<10;j++)
-//         {
-//             printf("%lf %lf", velocity[(i+128)*tam_pos+j], weights_copy[0*tam_pop+i]);
-//         }
-//         printf("\n");
-//     }
-
-//     if(i==0)
-//     {
-//         printf("com = %lf, j = %d, %lf\n", communication[i*tam_pos+j], j, communication_probability[0]);
-//     }
-//     if(communication[i*tam_pos+j]<communication_probability[0])
-    if(communication_l[j]<communication_probability[0])
-    {
-//         cooperation_term = weights[3*tam_pop+i]*cooperation_rand[i]+1;
-        cooperation_term = weights[3*tam_pop+i]*cooperation_rand_l+1;
-//         if(i == 0)
-//         {
-//             printf("entrou j =%d, %lf %lf %lf\n", j, weights[3*tam_pop+i], cooperation_rand[i], cooperation_term);
-//         }
-        cooperation_term *= position[global_best[i]*tam_pos+j];
-//         if(i == 0)
-//         {
-//             printf("j =%d, %lf\n", j, cooperation_term);
-//         }
-        cooperation_term -= position[i*tam_pos+j];
-//         if(i == 0)
-//         {
-//             printf("j =%d, %lf %lf\n", j, cooperation_term, position[i*tam_pos+j]);
-//         }
-        cooperation_term *= weights[2*tam_pop+i];
-//         if(i == 0)
-//         {
-//             printf("j2 =%d, %lf\n", j, cooperation_term);
-//         }
-    }
-    temp1 = velocity[i*tam_pos+j]*weights[0*tam_pop+i];
-//     temp2 = weights[1*tam_pop+i]*(personal_best_p[i*personal_guide_array_size[0]*tam_pos+
-//     whatPersonal[i]*tam_pos+j] - position[i*tam_pos+j]);
-    temp2 = weights[1*tam_pop+i]*(personal_best_p[i*personal_guide_array_size[0]*tam_pos+
-    whatPersonal_l*tam_pos+j] - position[i*tam_pos+j]);
-//     if(i == 0)
-//     {
-//         printf("j3 =%d, %lf %lf\n", j, temp1+temp2, cooperation_term);
-//     }
-    temp3 = cooperation_term;
-
-    //     teste
-//     if(i == 7)
-//     {
-// //         printf("%lf %lf %lf %lf %lf %d\n", temp1, temp2, cooperation_term, velocity[i*tam_pos+j], weights[0*tam_pop+i], j);
-//         printf("%lf %lf %lf %d %d\n", weights[1*tam_pop+i], personal_best_p[i*personal_guide_array_size[0]*tam_pos+
-//     whatPersonal[i]*tam_pos+j], position[i*tam_pos+j], whatPersonal[i], j);
-//     }
-
-    velocity[i*tam_pos+j] = temp1+temp2+temp3;
-    if(velocity[i*tam_pos+j]<velocity_min_value[j])
-    {
-        velocity[i*tam_pos+j]=velocity_min_value[j];
-    }
-    if(velocity[i*tam_pos+j]>velocity_max_value[j])
-    {
-        velocity[i*tam_pos+j]=velocity_max_value[j];
-    }
-
-//     if(i == 0)
-//     {
-//         printf("j4 =%d, %lf\n", j, velocity[i*tam_pos+j] );
-//     }
-
-//     if(communication[(i+tam_pop)*tam_pos+j]<communication_probability[0])
-    if(communication_copy_l[j]<communication_probability[0])
-    {
-//         cooperation_term = weights_copy[3*tam_pop+i]*cooperation_rand[i+tam_pop]+1;
-        cooperation_term = weights_copy[3*tam_pop+i]*cooperation_rand_l_2+1;
-//         if(i == 0)
-//         {
-//             printf("entrou j =%d, %lf %lf %lf\n", j, weights_copy[3*tam_pop+i],
-//             cooperation_rand[i+tam_pop], cooperation_term);
-//         }
-        cooperation_term *= position[global_best[i+tam_pop]*tam_pos+j];
-//         if(i == 0)
-//         {
-//             printf("j2 =%d, coop = %lf gb = %lf, %d %d\n", j,
-//             cooperation_term, position[global_best[i+tam_pop]*tam_pos+j],
-//             global_best[i], global_best[128]);
-//         }
-        cooperation_term -= position[(i+tam_pop)*tam_pos+j];
-//         if(i == 0)
-//         {
-//             printf("j3 =%d, coop = %lf pos = %lf\n", j, cooperation_term,
-//             position[(i+tam_pop)*tam_pos+j]);
-//         }
-        cooperation_term *= weights_copy[2*tam_pop+i];
-//         if(i == 0)
-//         {
-//             printf("j4 =%d, coop = %lf wei2 = %lf\n", j, cooperation_term, weights_copy[2*tam_pop+i]);
-//         }
-    }
-    else
-    {
-        cooperation_term = 0;
-    }
-
-    temp1  = velocity[(i+tam_pop)*tam_pos+j]*weights_copy[0*tam_pop+i];
-//     temp2  = weights_copy[1*tam_pop+i]*(personal_best_p[i*
-//     personal_guide_array_size[0]*tam_pos+whatPersonal[i]*tam_pos+j] -
-//     position[(i+tam_pop)*tam_pos+j]);
-//     temp2  = weights_copy[1*tam_pop+i]*(personal_best_p[i*
-//     personal_guide_array_size[0]*tam_pos+whatPersonal[i+tam_pop]*tam_pos+j] -
-//     position[(i+tam_pop)*tam_pos+j]);
-    temp2  = weights_copy[1*tam_pop+i]*(personal_best_p[i*
-    personal_guide_array_size[0]*tam_pos+whatPersonal_l_2*tam_pos+j] -
-    position[(i+tam_pop)*tam_pos+j]);
-    velocity[(i+tam_pop)*tam_pos+j] = temp1+temp2+cooperation_term;
-
-//     if(i == 7)
-//     {
-//         //         printf("%lf %lf %lf %lf %lf %d\n", temp1, temp2, cooperation_term, velocity[i*tam_pos+j], weights[0*tam_pop+i], j);
-//         printf("%lf %lf %lf %d %d\n", weights_copy[1*tam_pop+i], personal_best_p[i*
-//     personal_guide_array_size[0]*tam_pos+whatPersonal[i]*tam_pos+j], position[(i+tam_pop)*tam_pos+j], whatPersonal[i], j);
-//     }
-
-    if(velocity[(i+tam_pop)*tam_pos+j]<velocity_min_value[j])
-    {
-        velocity[(i+tam_pop)*tam_pos+j]=velocity_min_value[j];
-    }
-    if(velocity[(i+tam_pop)*tam_pos+j]>velocity_max_value[j])
-    {
-        velocity[(i+tam_pop)*tam_pos+j]=velocity_max_value[j];
-    }
-
-//     temp1 = velocity[i*tam_pos+j]*weights[0*tam_pop+i];
-//     temp2 = weights[1*tam_pop+i]*(personal_best_p[i*personal_guide_array_size[0]*tam_pos+
-//     whatPersonal[i]*tam_pos+j] - position[i*tam_pos+j]);
-//     temp3 = cooperation_term;
-
-//         new_velocity = inertia_term + memory_term + cooperation_term
-//         new_velocity = self.check_velocity_limits(new_velocity)
-//
-
-//     if(i == 0 && j==0)
-//     {
-        //         printf("%lf %lf %lf %lf\n",velocity[i*tam_pos+j], velocity[(i+tam_pop)*tam_pos+j]
-//         , weights[0*tam_pop+i], weights_copy[0*tam_pop+i]);
-//         printf("%lf %lf %d %lf\n",velocity[(i+tam_pop)*tam_pos+j], weights[0*tam_pop+i]
-//         , (i+tam_pop)*tam_pos+j, weights_copy[0*tam_pop+i]);
-//         for(int j=0;j<10;j++)
-//         {
-//             printf("%lf %lf", velocity[(i+128)*tam_pos+j], weights_copy[0*tam_pop+i]);
-//         }
-//         printf("\n");
-//     }
-//         new_position = np.asarray(particle.position) + new_velocity
-//         new_position = self.check_position_limits(new_position)
-//         new_velocity = self.check_velocity_limits(new_velocity,new_position)
-//
-//         particle.velocity = new_velocity
-//         particle.position = new_position
-//
-//         if self.params.secondary_params:
-//             fit_eval = self.fitness_evaluation(self.fitness_function,particle.position)
-//             particle.fitness = fit_eval[0]
-//             particle.secondary_params = fit_eval[1:]
-//         else:
-//             particle.fitness = self.fitness_evaluation(self.fitness_function,particle.position)
 }
 
 __global__ void move_particle2(double *position, double *velocity, double *position_min_value,
-double *position_max_value)
+double *position_max_value, int *tam_pop2, int *tam_pos2)
 {
     int i = blockIdx.x*blockDim.x+threadIdx.x;
-    int j = threadIdx.y;
-    int tam_pos = blockDim.y;
-    position[i*tam_pos+j]+=velocity[i*tam_pos+j];
+//     int j = threadIdx.y;
+    int j = blockIdx.y*blockDim.y+threadIdx.y;
 
-    if(position[i*tam_pos+j]<position_min_value[j])
-    {
-        position[i*tam_pos+j]=position_min_value[j];
-    }
-    if(position[i*tam_pos+j]>position_max_value[j])
-    {
-        position[i*tam_pos+j]=position_max_value[j];
-    }
+//     int tam_pos = blockDim.y;
+    int tam_pos = tam_pos2[0];
+    int tam_pop = tam_pop2[0];
 
-    if((position[i*tam_pos+j] == position_min_value[j]) && velocity[i*tam_pos+j]<0)
+    if(i<tam_pop && j<tam_pos)
     {
-        velocity[i*tam_pos+j]*=-1;
-    }
-    if((position[i*tam_pos+j] == position_max_value[j]) && velocity[i*tam_pos+j]>0)
-    {
-        velocity[i*tam_pos+j]*=-1;
+        position[i*tam_pos+j]+=velocity[i*tam_pos+j];
+
+        if(position[i*tam_pos+j]<position_min_value[j])
+        {
+            position[i*tam_pos+j]=position_min_value[j];
+        }
+        if(position[i*tam_pos+j]>position_max_value[j])
+        {
+            position[i*tam_pos+j]=position_max_value[j];
+        }
+
+        if((position[i*tam_pos+j] == position_min_value[j]) && velocity[i*tam_pos+j]<0)
+        {
+            velocity[i*tam_pos+j]*=-1;
+        }
+        if((position[i*tam_pos+j] == position_max_value[j]) && velocity[i*tam_pos+j]>0)
+        {
+            velocity[i*tam_pos+j]*=-1;
+        }
     }
 }
 
@@ -4087,51 +3773,69 @@ __global__ void init_population(double *position, int *position_dim, int *seed, 
     }
 }
 
+// __global__ void mutate_weights(double *weights, int *seed, int *tam_pop, double *mutation_rate)
+// {
+//     int i = threadIdx.x;
+//     int j = threadIdx.y;
+//     curandState state;
+//
+//     curand_init(seed[0], i*tam_pop[0]+j, 0, &state);
+//     weights[i*tam_pop[0]+j] = curand_normal(&state)*mutation_rate[0];
+// }
+
 __global__ void mutate_weights(double *weights, int *seed, int *tam_pop, double *mutation_rate)
 {
-    int i = threadIdx.x;
-    int j = threadIdx.y;
+    int i = blockIdx.x*blockDim.x+threadIdx.x;
     curandState state;
 
-    curand_init(seed[0], i*tam_pop[0]+j, 0, &state);
-    weights[i*tam_pop[0]+j] = curand_normal(&state)*mutation_rate[0];
+    if(i < 6 * tam_pop[0])
+    {
+           curand_init(seed[0], i, 0, &state);
+           weights[i] = curand_normal(&state)*mutation_rate[0];
+    }
 }
 
 __global__ void mutate_weights2(double *weights, int *tam_pop)
 {
-    int i = threadIdx.x;
-    int j = threadIdx.y;
+    int i = blockIdx.x*blockDim.x+threadIdx.x;
+    int j = blockIdx.y*blockDim.y+threadIdx.y;
 
-    if(weights[i*tam_pop[0]+j]<0)
+    if(j<tam_pop[0])
     {
-        weights[i*tam_pop[0]+j] = 0;
-    }
-    if(weights[i*tam_pop[0]+j]>1)
-    {
-        weights[i*tam_pop[0]+j] = 1;
-    }
+        if(weights[i*tam_pop[0]+j]<0)
+        {
+            weights[i*tam_pop[0]+j] = 0;
+        }
+        if(weights[i*tam_pop[0]+j]>1)
+        {
+            weights[i*tam_pop[0]+j] = 1;
+        }
+   }
 }
 
 __global__ void mutate_weights3(double *weights, int *tam_pop)
 {
-    int i = threadIdx.x;
+    int i = blockIdx.x*blockDim.x+threadIdx.x;
 
-    if(weights[4*tam_pop[0]+i]<0)
+    if(i<tam_pop[0])
     {
-        weights[4*tam_pop[0]+i] = 0;
-    }
-    if(weights[4*tam_pop[0]+i]>0.5)
-    {
-        weights[4*tam_pop[0]+i] = 0.5;
-    }
+        if(weights[4*tam_pop[0]+i]<0)
+        {
+            weights[4*tam_pop[0]+i] = 0;
+        }
+        if(weights[4*tam_pop[0]+i]>0.5)
+        {
+            weights[4*tam_pop[0]+i] = 0.5;
+        }
 
-    if(weights[5*tam_pop[0]+i]<0)
-    {
-        weights[5*tam_pop[0]+i] = 0;
-    }
-    if(weights[5*tam_pop[0]+i]>2.0)
-    {
-        weights[5*tam_pop[0]+i] = 2.0;
+        if(weights[5*tam_pop[0]+i]<0)
+        {
+            weights[5*tam_pop[0]+i] = 0;
+        }
+        if(weights[5*tam_pop[0]+i]>2.0)
+        {
+            weights[5*tam_pop[0]+i] = 2.0;
+        }
     }
 }
 }

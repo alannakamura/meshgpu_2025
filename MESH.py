@@ -2060,49 +2060,52 @@ class MESH:
                     # zera os pesos na gpu
                     weights = np.zeros(6 * self.params.population_size, dtype=np.float64)
                     cuda.memcpy_htod(self.weights_g, weights)
-
-                    div = int(self.params.population_size/128)
                     cuda.memcpy_htod(self.seed_g, np.random.randint(0, int(1e9), dtype=np.int32))
 
-                    # cada peso recebe um numero aleatorio de uma distribuição normal de media 0 e std=1
+                    div = int(np.ceil(self.params.population_size * 6 / 1024))
                     mutate_weights = self.mod.get_function("mutate_weights")
                     mutate_weights(self.weights_g, self.seed_g, self.params.population_size_g,
                                    self.params.mutation_rate_g,
-                          block=(6, int(self.params.population_size/div), 1),
-                          grid=(1, div, 1))
+                                   block=(int(np.ceil(self.params.population_size*6 / div)), 1, 1),
+                                   grid=(div, 1, 1))
                     cuda.Context.synchronize()
 
+                    div = int(np.ceil(self.params.population_size/ 256))
                     # os pesos de 0 a 3, sao limitados entre 0 e 1
                     mutate_weights2 = self.mod.get_function("mutate_weights2")
                     mutate_weights2(self.weights_g, self.params.population_size_g,
-                                   block=(4, int(self.params.population_size/div), 1),
+                                   block=(4, int(np.ceil(self.params.population_size/div)), 1),
                                    grid=(1, div, 1))
                     cuda.Context.synchronize()
 
+                    div = int(np.ceil(self.params.population_size / 1024))
                     # aplica limites aos pesos 4 e 5
                     mutate_weights3 = self.mod.get_function("mutate_weights3")
                     mutate_weights3(self.weights_g, self.params.population_size_g,
-                                    block=(int(self.params.population_size), 1, 1),
-                                    grid=(1, 1, 1))
+                                    block=(int(np.ceil(self.params.population_size/div)), 1, 1),
+                                    grid=(div, 1, 1))
                     cuda.Context.synchronize()
 
                     #weights copy
-                    # mesmas operacoes para os pesos das copias
+
+                    div = int(np.ceil(self.params.population_size * 6 / 1024))
                     cuda.memcpy_htod(self.seed_g, np.random.randint(0, int(1e9), dtype=np.int32))
                     mutate_weights(self.weights_copy_g, self.seed_g, self.params.population_size_g,
                                    self.params.mutation_rate_g,
-                                   block=(6, int(self.params.population_size/div), 1),
-                                   grid=(1, div, 1))
+                                   block=(int(np.ceil(self.params.population_size*6 / div)), 1, 1),
+                                   grid=(div, 1, 1))
                     cuda.Context.synchronize()
 
+                    div = int(np.ceil(self.params.population_size / 256))
                     mutate_weights2(self.weights_copy_g, self.params.population_size_g,
-                                    block=(4, int(self.params.population_size/div), 1),
+                                    block=(4, int(np.ceil(self.params.population_size/div)), 1),
                                     grid=(1, div, 1))
                     cuda.Context.synchronize()
 
+                    div = int(np.ceil(self.params.population_size / 1024))
                     mutate_weights3(self.weights_copy_g, self.params.population_size_g,
-                                    block=(int(self.params.population_size), 1, 1),
-                                    grid=(1, 1, 1))
+                                    block=(int(np.ceil(self.params.population_size)), 1, 1),
+                                    grid=(div, 1, 1))
                     cuda.Context.synchronize()
 
                     gpu[3] += (dt.now() - start).total_seconds()
@@ -2115,19 +2118,24 @@ class MESH:
                 if self.gpu:
                     # calculo do global_best
                     # calculo do sigma da particula i
-                    div = int(np.ceil((self.params.population_size * 2 + self.params.memory_size)/512))
+                    total = self.params.population_size * 2 + self.params.memory_size
+                    div = int(np.ceil(total/1024))
+
                     sigma_eval = self.mod.get_function("sigma_eval")
                     sigma_eval(self.sigma_g, self.fitness_g, self.params.objectives_dim_g,
-                               block=(int((self.params.population_size * 2 + self.params.memory_size)/div), 1, 1),
+                               block=(int(np.ceil(total/div)),1, 1),
                                grid=(div, 1, 1))
                     cuda.Context.synchronize()
 
+                    total = self.params.population_size * 2
+                    div = int(np.ceil(total / 1024))
+                    # sigma_nearest = self.mod.get_function("sigma_nearest")
                     sigma_nearest = self.mod.get_function("sigma_nearest")
                     sigma_nearest(self.sigma_g, self.fronts_g, self.tams_fronts_g, self.rank_g,
                                   self.params.population_size_g, self.params.memory_size_g,
                                   self.params.objectives_dim_g, self.global_best_g, self.fitness_g,
-                                  block=(int(2 * self.params.population_size), 1, 1),
-                                  grid=(1, 1, 1))
+                                  block=(int(np.ceil(total/div)), 1, 1),
+                                  grid=(div, 1, 1))
                     cuda.Context.synchronize()
 
                 gpu[4] += (dt.now() - start).total_seconds()
@@ -2138,8 +2146,10 @@ class MESH:
                 start = dt.now()
 
                 if self.gpu:
-                    # div = 2
-                    div = int(self.params.population_size/64)
+
+                    # div = int(self.params.population_size/64)
+                    div  = int(np.ceil(self.params.population_size / 64))
+                    div2 = int(np.ceil(self.params.position_dim / 16))
 
                     cuda.memcpy_htod(self.seed_g, np.random.randint(0, int(1e9), dtype=np.int32))
 
@@ -2150,16 +2160,28 @@ class MESH:
                                   self.params.communication_probability_g,
                                   self.global_best_g, self.params.velocity_max_value_g,
                                   self.params.velocity_min_value_g, self.seed_g,
-                                  block=(int(self.params.population_size / div), self.params.position_dim, 1),
-                                  grid=(div, 1, 1))
+                                  self.params.population_size_g, self.params.position_dim_g,
+                                  block=(int(np.ceil(self.params.population_size / div)),
+                                         int(np.ceil(self.params.position_dim/ div2)), 1),
+                                  grid=(div, div2, 1))
                     cuda.Context.synchronize()
 
                     # define limites apos o movimento das posicoes e velocidades
+                    # div *= 2
+                    # move_particle2 = self.mod.get_function("move_particle2")
+                    # move_particle2(self.position_g, self.velocity_g, self.params.position_min_value_g,
+                    #                self.params.position_max_value_g,
+                    #                block=(int(2 * self.params.population_size / div), self.params.position_dim, 1),
+                    #                grid=(div, 1, 1))
+                    # cuda.Context.synchronize()
+
                     div *= 2
                     move_particle2 = self.mod.get_function("move_particle2")
                     move_particle2(self.position_g, self.velocity_g, self.params.position_min_value_g,
                                    self.params.position_max_value_g,
-                                   block=(int(2 * self.params.population_size / div), self.params.position_dim, 1),
+                                   self.params.population_size_g, self.params.position_dim_g,
+                                   block=(int(np.ceil(2 * self.params.population_size / div)),
+                                          int(np.ceil(self.params.position_dim/div2)), 1),
                                    grid=(div, 1, 1))
                     cuda.Context.synchronize()
 
@@ -2172,6 +2194,8 @@ class MESH:
                     cuda.Context.synchronize()
 
                     # update_personal_best3 = self.mod.get_function("update_personal_best3")
+                    div = int(np.ceil(2*self.params.population_size / 1024))
+
                     update_personal_best3 = self.mod.get_function("update_personal_best3_validation")
                     update_personal_best3(self.personal_best_position_g, self.personal_best_velocity_g,
                                           self.personal_best_fitness_g,
@@ -2179,7 +2203,7 @@ class MESH:
                                           self.fitness_g,
                                           self.params.personal_guide_array_size_g,
                                           self.params.otimizations_type_g,
-                                          block=(2 * self.params.population_size, 1, 1), grid=(1, 1, 1))
+                                          block=(int(np.ceil(2 * self.params.population_size/div)), 1, 1), grid=(div, 1, 1))
                     cuda.Context.synchronize()
 
                 gpu[5] += (dt.now() - start).total_seconds()
