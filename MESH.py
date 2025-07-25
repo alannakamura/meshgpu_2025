@@ -1662,7 +1662,7 @@ class MESH:
                 div = int(np.ceil(self.params.population_size / 1024))
                 # div2 = int(np.ceil(self.params.position_dim / 8))
 
-                function = self.mod.get_function("function")
+                function = self.mod.get_function("function1")
                 function(self.params.func_n_g, self.position_g, self.params.position_dim_g,
                          self.fitness_g, self.alpha_g, self.params.population_size_g,
                     block=(int(np.ceil(self.params.population_size/div)), 1, 1),
@@ -1681,7 +1681,8 @@ class MESH:
                                        self.params.otimizations_type_g,
                                        # block=(16, 32, 1),
                                        # grid=(div, int(div/2), 1))
-                                       block=(32, 32, 1),
+                                       block=(int(np.ceil(self.params.population_size / div)),
+                                              int(np.ceil(self.params.population_size / div)), 1),
                                        grid=(div, div, 1))
                 cuda.Context.synchronize()
 
@@ -1738,9 +1739,13 @@ class MESH:
                     cuda.memcpy_htod(self.params.current_memory_size_g, self.params.memory_size)
 
                     # zera todas as posicoes do vetor crowding distance
+
+                    div = int(np.ceil(self.params.population_size/1024))
+
                     crowding_distance_inicialization = self.mod.get_function("crowding_distance_inicialization")
                     crowding_distance_inicialization(self.crowding_distance_g,
-                                                     block=(2 * self.params.population_size, 1, 1), grid=(1, 1, 1))
+                                                     block=(int(np.ceil(self.params.population_size/div)), 1, 1),
+                                                     grid=(1, 1, 1))
                     cuda.Context.synchronize()
 
 
@@ -1816,7 +1821,8 @@ class MESH:
                                            self.params.otimizations_type_g,
                                            # block=(16, 32, 1),
                                            # grid=(div, int(div/2), 1))
-                                           block=(32, 32, 1),
+                                           block=(int(np.ceil(self.params.population_size / div)),
+                                                  int(np.ceil(self.params.population_size / div)), 1),
                                            grid=(div, div, 1))
                     cuda.Context.synchronize()
 
@@ -2156,6 +2162,7 @@ class MESH:
 
                     cuda.memcpy_htod(self.seed_g, np.random.randint(0, int(1e9), dtype=np.int32))
 
+                    #aqui uso so a populacao pq no emsmo kernel ele calcula a copia tb
                     move_particle = self.mod.get_function("move_particle")
                     move_particle(self.weights_g, self.weights_copy_g, self.personal_best_position_g,
                                   self.position_g, self.velocity_g,
@@ -2188,11 +2195,11 @@ class MESH:
                                    grid=(div, 1, 1))
                     cuda.Context.synchronize()
 
-                    div = int(np.ceil(self.params.population_size / 1024))
-                    function = self.mod.get_function("function")
+                    div = int(np.ceil(2*self.params.population_size / 1024))
+                    function = self.mod.get_function("function2")
                     function(self.params.func_n_g, self.position_g, self.params.position_dim_g,
                              self.fitness_g, self.alpha_g, self.params.population_size_g,
-                             block=(int(np.ceil(self.params.population_size / div)), 1, 1),
+                             block=(int(np.ceil(2*self.params.population_size / div)), 1, 1),
                              grid=(div, 1, 1))
                     cuda.Context.synchronize()
 
@@ -2273,12 +2280,12 @@ class MESH:
                         # zerar vetor crowding distance
 
                         # parei aqui em 240725
-                        # div =
+                        div = int(np.ceil(2*self.params.population_size/1024))
 
-                        crowding_distance_inicialization = self.mod.get_function("crowding_distance_inicialization")
-                        crowding_distance_inicialization(self.crowding_distance_g,
-                                                         block=(2*self.params.population_size, 1, 1),
-                                                         grid=(1, 1, 1))
+                        crowding_distance_inicialization2 = self.mod.get_function("crowding_distance_inicialization2")
+                        crowding_distance_inicialization2(self.crowding_distance_g,
+                                                         block=(int(np.ceil(2*self.params.population_size/div)), 1, 1),
+                                                         grid=(div, 1, 1))
                         cuda.Context.synchronize()
 
                         # inicializa o vetor population_index_g,que guarda inicialmente a posicao de cada
@@ -2286,33 +2293,43 @@ class MESH:
                         # isso e necessario pq ao reordenar varias vezes a populacao, o indice se altera
                         # e a referencia para os fronts sao os indices atuais da sparticulas
                         # a ideia seria ordenar pro crowding distance e no final voltar a ordem inicial para evitar ter
-                        # que ercalcular os fronts
+                        # que recalcular os fronts
+
                         population_index_inicialization = self.mod.get_function("population_index_inicialization")
-                        population_index_inicialization(self.population_index_g,
-                                                        block=(2*self.params.population_size, 1, 1), grid=(1, 1, 1))
+                        population_index_inicialization(self.population_index_g, self.params.population_size_g,
+                                                        block=(int(np.ceil(2*self.params.population_size/div)), 1, 1),
+                                                        grid=(div, 1, 1))
                         cuda.Context.synchronize()
 
                         # ordena o vetor de crowding distance testeTempo250624 population_index para auxiliar
                         # no calculo ddo crowding distance.
+
+                        div = int(np.ceil(self.params.population_size/1024))
+                        div2 = int(np.ceil(2*self.params.population_size / 1024))
+
+                        # por enquanto populacao tem que ser potencia de 2.
+                        # tem que etstar se o crowding funciona para mais de 1 bloco, ou seja populacao maior que 512
                         for i in range(self.params.objectives_dim):
                             cuda.memcpy_htod(i_g, np.array([i], dtype=np.int32))
 
                             # para validacao, essa parte sera comentada, descomentar depois
                             # ordena os vetores de indice e os crowding distance de acordo com
                             # o fitness da dimensao
-                            for j in range(self.params.population_size):
+                            for j in range(2*self.params.population_size):
                                 front_sort5_par = self.mod.get_function("front_sort5_par")
                                 front_sort5_par(self.fitness_g,
                                                 self.params.objectives_dim_g, i_g, self.crowding_distance_g,
                                                 self.params.population_size_g, self.population_index_g,
-                                                block=(int(self.params.population_size / 2), 1, 1), grid=(1, 1, 1))
+                                                block=(int(np.ceil(self.params.population_size/div)), 1, 1),
+                                                grid=(div, 1, 1))
                                 cuda.Context.synchronize()
 
                                 front_sort5_impar = self.mod.get_function("front_sort5_impar")
                                 front_sort5_impar(self.fitness_g,
                                                   self.params.objectives_dim_g, i_g, self.crowding_distance_g,
                                                   self.params.population_size_g, self.population_index_g,
-                                                  block=(int(self.params.population_size / 2) - 1, 1, 1), grid=(1, 1, 1))
+                                                  block=(int(np.ceil(self.params.population_size)/div) - 1, 1, 1),
+                                                  grid=(div, 1, 1))
                                 cuda.Context.synchronize()
 
                             crowding_distance4 = self.mod.get_function("crowding_distance4")
@@ -2320,7 +2337,8 @@ class MESH:
                                                self.params.objectives_dim_g, self.tams_fronts_g, i_g,
                                                self.crowding_distance_g, self.params.population_size_g,
                                                self.population_index_g,
-                                               block=(int(2*self.params.population_size) - 2, 1, 1), grid=(1, 1, 1))
+                                               block=(int(np.ceil(2*self.params.population_size/div2)) - 2, 1, 1),
+                                               grid=(div2, 1, 1))
 
                         # testar se e necessario reordenar o vetor de indices 260525
                         # for j in range(self.params.population_size):
@@ -2345,64 +2363,93 @@ class MESH:
 
 
                 # div = 2
-                div = int(self.params.population_size/64)
+                div = int(np.ceil(self.params.population_size/256))
+                div2 = int(np.ceil(self.params.position_dim/4))
+
                 # copiar os selecionados para uma area auxiliar
-                create_next_gen1 = self.mod.get_function("create_next_gen1")
-                create_next_gen1(self.position_g, self.aux_g, self.fronts_g,
-                                 block=(int(self.params.population_size / div), self.params.position_dim, 1),
-                                 grid=(div, 1, 1))
+                create_next_gen1_pop = self.mod.get_function("create_next_gen1_pop")
+                create_next_gen1_pop(self.position_g, self.aux_g, self.fronts_g,
+                                 self.params.population_size_g, self.params.position_dim_g,
+                                 block=(int(np.ceil(self.params.population_size / div)),
+                                        int(np.ceil(self.params.position_dim/ div2)), 1),
+                                 grid=(div, div2, 1))
                 cuda.Context.synchronize()
 
                 # copiar os selecionados para as posicoes da populacao da proxima geracao
-                create_next_gen2 = self.mod.get_function("create_next_gen2")
-                create_next_gen2(self.position_g, self.aux_g,
-                                 block=(int(self.params.population_size / div), self.params.position_dim, 1),
-                                 grid=(div, 1, 1))
+                create_next_gen2_pop = self.mod.get_function("create_next_gen2_pop")
+                create_next_gen2_pop(self.position_g, self.aux_g,
+                                 self.params.population_size_g, self.params.position_dim_g,
+                                 block=(int(np.ceil(self.params.population_size/div)),
+                                        int(np.ceil(self.params.position_dim/div2)), 1),
+                                 grid=(div, div2, 1))
                 cuda.Context.synchronize()
 
                 # o mesmo para a velocidade
-                create_next_gen1 = self.mod.get_function("create_next_gen1")
-                create_next_gen1(self.velocity_g, self.aux_g, self.fronts_g,
-                                 block=(int(self.params.population_size / div), self.params.position_dim, 1),
-                                 grid=(div, 1, 1))
+                create_next_gen1_pop = self.mod.get_function("create_next_gen1_pop")
+                create_next_gen1_pop(self.velocity_g, self.aux_g, self.fronts_g,
+                                 self.params.population_size_g, self.params.position_dim_g,
+                                 block=(int(np.ceil(self.params.population_size / div)),
+                                        int(np.ceil(self.params.position_dim/div2)), 1),
+                                 grid=(div, div2, 1))
                 cuda.Context.synchronize()
 
-                create_next_gen2 = self.mod.get_function("create_next_gen2")
-                create_next_gen2(self.velocity_g, self.aux_g,
-                                 block=(int(self.params.population_size / div), self.params.position_dim, 1),
-                                 grid=(div, 1, 1))
+                create_next_gen2_pop = self.mod.get_function("create_next_gen2_pop")
+                create_next_gen2_pop(self.velocity_g, self.aux_g,
+                                 self.params.population_size_g, self.params.position_dim_g,
+                                 block=(int(np.ceil(self.params.population_size / div)),
+                                        int(np.ceil(self.params.position_dim/div2)), 1),
+                                 grid=(div, div2, 1))
                 cuda.Context.synchronize()
 
+                # div = 1
                 # div = 8
-                div = int(self.params.population_size/16)
-                create_next_gen1 = self.mod.get_function("create_next_gen1")
-                create_next_gen1(self.personal_best_position_g, self.aux3_g, self.fronts_g,
-                                 block=(int(self.params.population_size / div),
-                                        self.params.position_dim * self.params.personal_guide_array_size, 1),
-                                 grid=(div, 1, 1))
+                div = int(np.ceil(self.params.population_size/256))
+                div2 = int(np.ceil(self.params.position_dim * self.params.personal_guide_array_size / 4))
+
+                create_next_gen1_pb = self.mod.get_function("create_next_gen1_pb")
+                create_next_gen1_pb(self.personal_best_position_g, self.aux3_g, self.fronts_g,
+                                 self.params.population_size_g, self.params.position_dim_g,
+                                 self.params.personal_guide_array_size_g,
+                                 block=(int(np.ceil(self.params.population_size / div)),
+                                        int(np.ceil(self.params.position_dim *
+                                                    self.params.personal_guide_array_size/div2)),
+                                                    1),
+                                 grid=(div, div2, 1))
                 cuda.Context.synchronize()
 
-                create_next_gen2 = self.mod.get_function("create_next_gen2")
-                create_next_gen2(self.personal_best_position_g, self.aux3_g,
-                                 block=(int(self.params.population_size / div),
-                                        self.params.position_dim * self.params.personal_guide_array_size, 1),
-                                 grid=(div, 1, 1))
+                create_next_gen2_pb = self.mod.get_function("create_next_gen2_pb")
+                create_next_gen2_pb(self.personal_best_position_g, self.aux3_g,
+                                 self.params.population_size_g, self.params.position_dim_g,
+                                 self.params.personal_guide_array_size_g,
+                                 block=(int(np.ceil(self.params.population_size / div)),
+                                        int(np.ceil(self.params.position_dim
+                                                    * self.params.personal_guide_array_size/div2)),
+                                        1),
+                                 grid=(div, div2, 1))
                 cuda.Context.synchronize()
 
                 # div = 2
-                div = int(self.params.population_size/64)
-                create_next_gen1 = self.mod.get_function("create_next_gen1")
-                create_next_gen1(self.personal_best_fitness_g, self.aux3_g, self.fronts_g,
-                                 block=(int(self.params.population_size / div),
-                                        self.params.objectives_dim * self.params.personal_guide_array_size, 1),
-                                 grid=(div, 1, 1))
+                # div = int(self.params.population_size/64)
+                div = int(np.ceil(self.params.population_size / 256))
+                div2 = int(np.ceil(self.params.position_dim * self.params.personal_guide_array_size / 4))
+                create_next_gen1_pb = self.mod.get_function("create_next_gen1_pb")
+                create_next_gen1_pb(self.personal_best_fitness_g, self.aux3_g, self.fronts_g,
+                                 self.params.population_size_g, self.params.objectives_dim_g,
+                                 self.params.personal_guide_array_size_g,
+                                 block=(int(np.ceil(self.params.population_size / div)),
+                                        int(np.ceil(self.params.objectives_dim *
+                                                    self.params.personal_guide_array_size/div2)), 1),
+                                 grid=(div, div2, 1))
                 cuda.Context.synchronize()
 
-                create_next_gen2 = self.mod.get_function("create_next_gen2")
-                create_next_gen2(self.personal_best_fitness_g, self.aux3_g,
-                                 block=(int(self.params.population_size / div),
-                                        self.params.objectives_dim * self.params.personal_guide_array_size, 1),
-                                 grid=(div, 1, 1))
+                create_next_gen2_pb = self.mod.get_function("create_next_gen2_pb")
+                create_next_gen2_pb(self.personal_best_fitness_g, self.aux3_g,
+                                    self.params.population_size_g, self.params.objectives_dim_g,
+                                    self.params.personal_guide_array_size_g,
+                                 block=(int(np.ceil(self.params.population_size / div)),
+                                        int(np.ceil(self.params.objectives_dim *
+                                                    self.params.personal_guide_array_size/div2)), 1),
+                                 grid=(div, div2, 1))
                 cuda.Context.synchronize()
 
                 gpu[7] += (dt.now() - start).total_seconds()
@@ -2412,17 +2459,17 @@ class MESH:
                 if self.gpu:
                     #reavalia a nova populacao - depois ver com calma como retirar as copias e as memorias(260525)
                     div = int(np.ceil(self.params.population_size / 1024))
-                    function = self.mod.get_function("function")
+                    function = self.mod.get_function("function1")
                     function(self.params.func_n_g, self.position_g, self.params.position_dim_g,
                              self.fitness_g, self.alpha_g, self.params.population_size_g,
                              block=(int(np.ceil(self.params.population_size / div)), 1, 1),
                              grid=(div, 1, 1))
                     cuda.Context.synchronize()
-                    self.fitness_eval_count += 2 * self.params.population_size + self.params.memory_size
+                    # self.fitness_eval_count += 2 * self.params.population_size + self.params.memory_size
 
                     # atualizar fronts - testar isso depois(260625)
-                    div1 = int(self.params.population_size / 16)
-                    div2 = int(self.params.population_size / 32)
+                    # div1 = int(self.params.population_size / 16)
+                    # div2 = int(self.params.population_size / 32)
                     # print(div1, div2)
 
                     # ordenar fronts
@@ -2435,7 +2482,8 @@ class MESH:
                                            self.params.otimizations_type_g,
                                            # block=(16, 32, 1),
                                            # grid=(div, int(div/2), 1))
-                                           block=(32, 32, 1),
+                                           block=(int(np.ceil(self.params.population_size / div)),
+                                                  int(np.ceil(self.params.population_size / div)), 1),
                                            grid=(div, div, 1))
                     cuda.Context.synchronize()
 
@@ -2448,10 +2496,6 @@ class MESH:
                     cuda.Context.synchronize()
 
                     fast_nondominated_sort3 = self.mod.get_function("fast_nondominated_sort3")
-                    # fast_nondominated_sort3(self.domination_counter_g, self.params.population_size_g,
-                    #                         self.params.population_size_g, self.fronts_g,
-                    #                         self.tams_fronts_g,
-                    #                         self.rank_g,
                     fast_nondominated_sort3(self.domination_counter_g,
                                             self.params.population_size_g,
                                             self.fronts_g,
@@ -2480,10 +2524,7 @@ class MESH:
                                            block=(1, 1, 1), grid=(1, 1, 1))
                     cuda.Context.synchronize()
 
-                    # ordena o conjunto front0 mais memoria
-                    tam_front = np.zeros(1, dtype=np.int32)
-                    cuda.memcpy_dtoh(tam_front, self.tam_front0_mem_g)
-                    div = int(np.ceil(tam_front[0] / 32))
+
 
                     # if tam_front > 32:
                     #     block_x = 32
@@ -2493,6 +2534,11 @@ class MESH:
                     #     grid_x = 1
 
                     # print(block_x, grid_x, tam_front)
+
+                    # ordena o conjunto front0 mais memoria
+                    tam_front = np.zeros(1, dtype=np.int32)
+                    cuda.memcpy_dtoh(tam_front, self.tam_front0_mem_g)
+                    div = int(np.ceil(tam_front[0] / 32))
 
                     # ordena o vetor front0+memoria
                     fast_nondominated_sort4 = self.mod.get_function("fast_nondominated_sort4")
@@ -2505,7 +2551,8 @@ class MESH:
                                             # grid=(1, 1, 1))
                                             # block=(block_x, block_x, 1),
                                             # grid=(grid_x, grid_x, 1))
-                                            block=(32, 32, 1),
+                                            block=(int(np.ceil(tam_front[0] / div)),
+                                                   int(np.ceil(tam_front[0] / div)), 1),
                                             grid=(div, div, 1))
                     cuda.Context.synchronize()
 
@@ -2526,6 +2573,7 @@ class MESH:
                     cuda.Context.synchronize()
 
 
+                    #parei aqui 250725 - 17h36
                     tam_front = np.zeros(1, dtype=np.int32)
                     cuda.memcpy_dtoh(tam_front, self.tam_front0_g)
 
@@ -2565,7 +2613,7 @@ class MESH:
 
                         # atualizar fitness da memoria nova
                         div = int(np.ceil(self.params.population_size / 1024))
-                        function = self.mod.get_function("function")
+                        function = self.mod.get_function("function1")
                         function(self.params.func_n_g, self.position_g, self.params.position_dim_g,
                                  self.fitness_g, self.alpha_g, self.params.population_size_g,
                                  block=(int(np.ceil(self.params.population_size / div)), 1, 1),
@@ -2576,9 +2624,11 @@ class MESH:
                         # falta testar o else quando o exemplo chegar aqui
 
                         # zerar vetor crowding distance
+                        div = int(np.ceil(self.params.population_size/1024))
                         crowding_distance_inicialization = self.mod.get_function("crowding_distance_inicialization")
                         crowding_distance_inicialization(self.crowding_distance_g,
-                                                         block=(self.params.population_size, 1, 1), grid=(1, 1, 1))
+                                                         block=(int(np.ceil(self.params.population_size/1024)), 1, 1),
+                                                                grid=(div, 1, 1))
                         cuda.Context.synchronize()
 
                         # para cada dimensao ordena o front 0 de acordo coma  dimensao e calcula a parcela do cd
@@ -2636,7 +2686,7 @@ class MESH:
 
                         # atualizar fitness da memoria nova
                         div = int(np.ceil(self.params.population_size / 1024))
-                        function = self.mod.get_function("function")
+                        function = self.mod.get_function("function1")
                         function(self.params.func_n_g, self.position_g, self.params.position_dim_g,
                                  self.fitness_g, self.alpha_g, self.params.population_size_g,
                                  block=(int(np.ceil(self.params.population_size / div)), 1, 1),

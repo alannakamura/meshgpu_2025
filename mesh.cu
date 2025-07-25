@@ -1298,13 +1298,13 @@ __device__ void wfg1(double *position, int *position_dim, double *fitness, int i
 //     }
 }
 
-__global__ void function(int *func_n, double *position, int *position_dim,
- double *fitness, double *alpha, int *population_size)
+__device__ void function(int *func_n, double *position, int *position_dim,
+ double *fitness, double *alpha, int population_size)
 {
 //     int i = threadIdx.x;
     int i = blockIdx.x*blockDim.x+threadIdx.x;
 
-    if(i<population_size[0])
+    if(i<population_size)
     {
         if(func_n[0] == 1)
         {
@@ -1399,6 +1399,18 @@ __global__ void function(int *func_n, double *position, int *position_dim,
             mw10(position, position_dim, fitness, i, alpha);
         }
     }
+}
+
+__global__ void function1(int *func_n, double *position, int *position_dim,
+ double *fitness, double *alpha, int *population_size)
+{
+    function(func_n, position, position_dim, fitness, alpha, population_size[0]);
+}
+
+__global__ void function2(int *func_n, double *position, int *position_dim,
+ double *fitness, double *alpha, int *population_size)
+{
+    function(func_n, position, position_dim, fitness, alpha, 2*population_size[0]);
 }
 
 __device__ int a_dominate_b(double *fitness1, double *fitness2, int dim, int *maximize)
@@ -1794,6 +1806,16 @@ __global__ void crowding_distance_inicialization(int* c, int *tam_pop)
     }
 }
 
+__global__ void crowding_distance_inicialization2(int* c, int *tam_pop)
+{
+    int i = blockIdx.x*blockDim.x+threadIdx.x;
+
+    if(i<tam_pop[0]*2)
+    {
+         c[i] = 0;
+    }
+}
+
 __global__ void front_sort(int* front, int *dim, double *fitness, int *dim_fitness, int *i,
 double *crowd_distance)
 {
@@ -1924,18 +1946,22 @@ double *crowd_distance, int *tam_pop, int *index)
 {
     int temp;
 //     double temp2;
-    int j = threadIdx.x*2;
+//     int j = threadIdx.x*2;
+    int j = (blockIdx.x*blockDim.x+threadIdx.x)*2;
 
-    if(fitness[index[j]*dim_fitness[0]+i[0]]>fitness[index[j+1]*dim_fitness[0]+i[0]])
+    if(j<2*tam_pop[0])
     {
-//                 printf("%d %d %lf %lf\n",p1,p2, fitness[p1*dim_fitness[0]+i[0]],fitness[p2*dim_fitness[0]+i[0]]);
-                temp = index[j];
-                index[j] = index[j+1];
-                index[j+1] = temp;
-//                 testar depois
-//                 temp2 = crowd_distance[j];
-//                 crowd_distance[j] = crowd_distance[j+1];
-//                 crowd_distance[j+1] = temp2;
+        if(fitness[index[j]*dim_fitness[0]+i[0]]>fitness[index[j+1]*dim_fitness[0]+i[0]])
+        {
+    //                 printf("%d %d %lf %lf\n",p1,p2, fitness[p1*dim_fitness[0]+i[0]],fitness[p2*dim_fitness[0]+i[0]]);
+                    temp = index[j];
+                    index[j] = index[j+1];
+                    index[j+1] = temp;
+    //                 testar depois
+    //                 temp2 = crowd_distance[j];
+    //                 crowd_distance[j] = crowd_distance[j+1];
+    //                 crowd_distance[j+1] = temp2;
+        }
     }
 }
 
@@ -1944,18 +1970,21 @@ double *crowd_distance, int *tam_pop, int *index)
 {
     int temp;
 //     double temp2;
-    int j = threadIdx.x*2+1;
+    int j = (blockIdx.x*blockDim.x+threadIdx.x)*2+1;
 
-    if(fitness[index[j]*dim_fitness[0]+i[0]]>fitness[index[j+1]*dim_fitness[0]+i[0]])
+    if(j<2*tam_pop[0])
     {
-//                 printf("%d %d %lf %lf\n",p1,p2, fitness[p1*dim_fitness[0]+i[0]],fitness[p2*dim_fitness[0]+i[0]]);
-                temp = index[j];
-                index[j] = index[j+1];
-                index[j+1] = temp;
-//                 testar depois
-//                 temp2 = crowd_distance[j];
-//                 crowd_distance[j] = crowd_distance[j+1];
-//                 crowd_distance[j+1] = temp2;
+        if(fitness[index[j]*dim_fitness[0]+i[0]]>fitness[index[j+1]*dim_fitness[0]+i[0]])
+        {
+    //                 printf("%d %d %lf %lf\n",p1,p2, fitness[p1*dim_fitness[0]+i[0]],fitness[p2*dim_fitness[0]+i[0]]);
+                    temp = index[j];
+                    index[j] = index[j+1];
+                    index[j+1] = temp;
+    //                 testar depois
+    //                 temp2 = crowd_distance[j];
+    //                 crowd_distance[j] = crowd_distance[j+1];
+    //                 crowd_distance[j+1] = temp2;
+        }
     }
 }
 
@@ -3540,9 +3569,14 @@ __global__ void nextgen1(int *fronts, int *tam, int *tam_pop)
     //     tam[tam_pop[0]-1] = total;
 }
 
-__global__ void population_index_inicialization(int *index)
+__global__ void population_index_inicialization(int *index, int* tam_pop)
 {
-    index[threadIdx.x] = threadIdx.x;
+    int i = blockIdx.x*blockDim.x+threadIdx.x;
+
+    if(i<2*tam_pop[0])
+    {
+        index[i] = threadIdx.x;
+    }
 }
 
 __global__ void index_sort_par(double *crowd_distance, int *index)
@@ -3578,6 +3612,59 @@ __global__ void index_sort_impar(double *crowd_distance, int *index)
 //                 temp2 = crowd_distance[j];
 //                 crowd_distance[j] = crowd_distance[j+1];
 //                 crowd_distance[j+1] = temp2;
+    }
+}
+
+__global__ void create_next_gen1_pop(double *position1, double *position2, int *selected,
+int *tam_pop, int *pos_dim)
+{
+    int l = blockIdx.x*blockDim.x+threadIdx.x;
+    int c = blockIdx.y*blockDim.y+threadIdx.y;
+//     int tam = blockDim.y;
+    if(l<tam_pop[0] && c<pos_dim[0])
+    {
+        position2[l*pos_dim[0]+c] = position1[selected[l]*pos_dim[0]+c];
+    }
+}
+
+__global__ void create_next_gen2_pop(double *position1, double *position2,
+int *tam_pop, int *pos_dim)
+{
+    int l = blockIdx.x*blockDim.x+threadIdx.x;
+    int c = blockIdx.y*blockDim.y+threadIdx.y;
+//     int tam = blockDim.y;
+
+    if(l<tam_pop[0] && c<pos_dim[0])
+    {
+        position1[l*pos_dim[0]+c] = position2[l*pos_dim[0]+c];
+    }
+}
+
+__global__ void create_next_gen1_pb(double *position1, double *position2, int *selected,
+int *tam_pop, int *pos_dim, int *personal_guide_array_size)
+{
+    int l = blockIdx.x*blockDim.x+threadIdx.x;
+    int c = blockIdx.y*blockDim.y+threadIdx.y;
+//     int tam = blockDim.y;
+
+    if(l<tam_pop[0] && c<pos_dim[0]*personal_guide_array_size[0])
+    {
+        position2[l*pos_dim[0]*personal_guide_array_size[0]+c] =
+        position1[selected[l]*pos_dim[0]*personal_guide_array_size[0]+c];
+    }
+}
+
+__global__ void create_next_gen2_pb(double *position1, double *position2,
+int *tam_pop, int *pos_dim, int *personal_guide_array_size)
+{
+    int l = blockIdx.x*blockDim.x+threadIdx.x;
+    int c = blockIdx.y*blockDim.y+threadIdx.y;
+//     int tam = blockDim.y;
+
+    if(l<tam_pop[0] && c<pos_dim[0]*personal_guide_array_size[0])
+    {
+        position1[l*pos_dim[0]*personal_guide_array_size[0]+c] =
+        position2[l*pos_dim[0]*personal_guide_array_size[0]+c];
     }
 }
 
