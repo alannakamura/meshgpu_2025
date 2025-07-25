@@ -1721,12 +1721,15 @@ class MESH:
                     # o tamanho da memoria atual sera o tamanho do front 0
                     cuda.memcpy_htod(self.params.current_memory_size_g, tam_fronts[0])
 
+                    div = int(np.ceil(tam_fronts[0]/1024))
+
                     # copia front 0 para as primeiras posicoes da memoria
                     memory_inicialization1 = self.mod.get_function("memory_inicialization1")
                     memory_inicialization1(self.position_g, self.fitness_g, self.fronts_g,
                                            self.params.position_dim_g, self.params.objectives_dim_g,
-                                           self.params.population_size_g,
-                                           block=(int(tam_fronts[0]), 1, 1), grid=(1, 1, 1))
+                                           self.params.population_size_g, self.tams_fronts_g,
+                                           block=(int(np.ceil(tam_fronts[0]/div)), 1, 1),
+                                           grid=(div, 1, 1))
                     cuda.Context.synchronize()
                 else:
                     # esse trecho nunca e usado se o tamanho da memoria e igual ao da populacao
@@ -2262,14 +2265,20 @@ class MESH:
                              block=(1, 1, 1), grid=(1, 1, 1))
                     cuda.Context.synchronize()
 
+                    # parei aqui em 23/07/25
                     #verifica se sera preciso usar o crowding distance para quebrar o front
                     teste_tam = np.zeros(self.params.population_size, dtype=np.int32)
                     cuda.memcpy_dtoh(teste_tam, self.tams_fronts_g)
                     if teste_tam[-1] > 0:
                         # zerar vetor crowding distance
+
+                        # parei aqui em 240725
+                        # div =
+
                         crowding_distance_inicialization = self.mod.get_function("crowding_distance_inicialization")
                         crowding_distance_inicialization(self.crowding_distance_g,
-                                                         block=(2*self.params.population_size, 1, 1), grid=(1, 1, 1))
+                                                         block=(2*self.params.population_size, 1, 1),
+                                                         grid=(1, 1, 1))
                         cuda.Context.synchronize()
 
                         # inicializa o vetor population_index_g,que guarda inicialmente a posicao de cada

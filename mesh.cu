@@ -1763,20 +1763,24 @@ __global__ void print_dominantion_counter(int *m, int *colunas, int *population_
 }
 
 __global__ void memory_inicialization1(double *position, double *fitness, int *fronts,
- int *position_dim, int *objectives_dim, int *population_size)
+ int *position_dim, int *objectives_dim, int *population_size, int *tam_fronts)
 {
-    int i = threadIdx.x, j, k;
+    int i = blockIdx.x*blockDim.x+threadIdx.x;
+    int j, k;
     k = fronts[i];
 
-    for(j=0;j<position_dim[0];j++)
+    if(i<tam_fronts[0])
     {
-        position[(i+2*population_size[0])*position_dim[0]+j] =
-        position[k*position_dim[0]+j];
-    }
-    for(j=0;j<objectives_dim[0];j++)
-    {
-        fitness[(i+2*population_size[0])*objectives_dim[0]+j] =
-        fitness[k*objectives_dim[0]+j];
+        for(j=0;j<position_dim[0];j++)
+        {
+            position[(i+2*population_size[0])*position_dim[0]+j] =
+            position[k*position_dim[0]+j];
+        }
+        for(j=0;j<objectives_dim[0];j++)
+        {
+            fitness[(i+2*population_size[0])*objectives_dim[0]+j] =
+            fitness[k*objectives_dim[0]+j];
+        }
     }
 }
 
