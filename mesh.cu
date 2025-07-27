@@ -2266,16 +2266,21 @@ __global__ void memory_inicialization3(double *position, double *fitness, int *f
 }
 
 __global__ void memory_inicialization4(double *position, double *fitness,
- int *position_dim, int *objectives_dim, int *population_size, double *aux)
+ int *position_dim, int *objectives_dim, int *population_size, double *aux,
+ int *memory_size)
 {
-    int i = threadIdx.x, j;
-    for(j=0;j<position_dim[0];j++)
+    int i = blockIdx.x*blockDim.x+threadIdx.x,j;
+
+    if(i<memory_size[0])
     {
-        position[(i+2*population_size[0])*position_dim[0]+j] = 1e20;
-    }
-    for(j=0;j<objectives_dim[0];j++)
-    {
-        fitness[(i+2*population_size[0])*objectives_dim[0]+j] = 1e20;
+        for(j=0;j<position_dim[0];j++)
+        {
+            position[(i+2*population_size[0])*position_dim[0]+j] = 1e20;
+        }
+        for(j=0;j<objectives_dim[0];j++)
+        {
+            fitness[(i+2*population_size[0])*objectives_dim[0]+j] = 1e20;
+        }
     }
 }
 
@@ -3250,15 +3255,18 @@ __global__ void copy_3d(double *vector, int *tam1, int *tam2, int *tam3)
         vector[i+tam1[0]*tam2[0]*tam3[0]] = vector[i];
     }
 }
-__global__ void copy3(double *vector, double *vector2, int *tam)
+__global__ void copy3(double *vector, double *vector2, int *tam, int *tam_pop, int *tam_mem)
 {
-    int l = blockIdx.x*blockDim.x+threadIdx.x;
+    int l = blockIdx.x*blockDim.x+threadIdx.x,i;
+    int total = 2*tam_pop[0]+tam_mem[0];
 
-    for(int i=0;i<tam[0];i++)
+    if(l < total)
     {
-        vector2[l*tam[0]+i] = vector[l*tam[0]+i];
+        for(i=0;i<tam[0];i++)
+        {
+            vector2[l*tam[0]+i] = vector[l*tam[0]+i];
+        }
     }
-//     printf("%d %d\n", blockDim.y, blockDim.x*gridDim.x);
 }
 
 __global__ void sigma_eval(double *sigma_value, double *fitness, int *tam)

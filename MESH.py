@@ -2584,31 +2584,40 @@ class MESH:
 
                         # copia as particulas, copias e memoria atual para vetores auxiliares
                         copy3 = self.mod.get_function("copy3")
+                        total = 2 * self.params.population_size + self.params.memory_size
+                        div = int(np.ceil(total/1024))
+
                         copy3(self.position_g, self.aux_g, self.params.position_dim_g,
-                              block=(int(2 * self.params.population_size + self.params.memory_size), 1, 1),
-                              grid=(1, 1, 1))
+                              self.params.population_size_g, self.params.memory_size_g,
+                              block=(int(np.ceil(total/div)), 1, 1),
+                              grid=(div, 1, 1))
                         cuda.Context.synchronize()
                         copy3(self.velocity_g, self.aux2_g, self.params.position_dim_g,
-                              block=(int(2 * self.params.population_size + self.params.memory_size), 1, 1),
-                              grid=(1, 1, 1))
+                              self.params.population_size_g, self.params.memory_size_g,
+                              block=(int(np.ceil(total/div)), 1, 1),
+                              grid=(div, 1, 1))
                         cuda.Context.synchronize()
 
                         # coloca 1e20 em todas as posicoes e fitness de todas as particulas,
                         # copias e memoria
+                        div = int(np.ceil(self.params.memory_size / 1024))
                         memory_inicialization4 = self.mod.get_function("memory_inicialization4")
                         memory_inicialization4(self.position_g, self.fitness_g,
                                                self.params.position_dim_g, self.params.objectives_dim_g,
                                                self.params.population_size_g, self.aux_g,
-                                               block=(int(self.params.memory_size), 1, 1), grid=(1, 1, 1))
+                                               block=(int(np.ceil(self.params.memory_size/div)), 1, 1),
+                                               grid=(div, 1, 1))
                         cuda.Context.synchronize()
 
                         #inicializa a nova memoria com o front0
+                        div = int(np.ceil(tam_front[0] / 1024))
                         memory_inicialization5 = self.mod.get_function("memory_inicialization5")
                         memory_inicialization5(self.position_g, self.velocity_g, self.fitness_g,
                                                self.aux_g, self.aux2_g, self.front0_g,
                                                self.params.position_dim_g, self.params.objectives_dim_g,
                                                self.params.population_size_g,
-                                               block=(int(tam_front[0]), 1, 1), grid=(1, 1, 1))
+                                               block=(int(np.ceil(tam_front[0])/div), 1, 1),
+                                               grid=(div, 1, 1))
                         cuda.Context.synchronize()
 
                         # atualizar fitness da memoria nova
@@ -2627,12 +2636,15 @@ class MESH:
                         div = int(np.ceil(self.params.population_size/1024))
                         crowding_distance_inicialization = self.mod.get_function("crowding_distance_inicialization")
                         crowding_distance_inicialization(self.crowding_distance_g,
-                                                         block=(int(np.ceil(self.params.population_size/1024)), 1, 1),
-                                                                grid=(div, 1, 1))
+                                                        block=(int(np.ceil(self.params.population_size/1024)), 1, 1),
+                                                        grid=(div, 1, 1))
                         cuda.Context.synchronize()
 
-                        # para cada dimensao ordena o front 0 de acordo coma  dimensao e calcula a parcela do cd
+                        # para cada dimensao ordena o front 0 de acordo coma  dimensao e
+                        # calcula a parcela do cd
                         i_g = cuda.mem_alloc(np.array([1], np.int32).nbytes)
+                        total = tam_front[0]-2
+                        div = int(np.ceil(total/1024))
                         for i in range(self.params.objectives_dim):
                             # ordena os fronts em ordem crescente de cada coordenada fitness
                             cuda.memcpy_htod(i_g, np.array([i], dtype=np.int32))
@@ -2646,8 +2658,8 @@ class MESH:
                             crowding_distance(self.front0_g, self.tam_front0_g, self.fitness_g,
                                               self.params.objectives_dim_g, self.tams_fronts_g, i_g,
                                               self.crowding_distance_g,
-                                              block=(int(tam_front[0] + self.params.memory_size - 2), 1, 1),
-                                              grid=(1, 1, 1))
+                                              block=(int(np.ceil(total/div)), 1, 1),
+                                              grid=(div, 1, 1))
 
                         # ordena por ordem decresente de cd o front0 e o vetor cd
                         front_sort_crowding_distance = self.mod.get_function("front_sort_crowding_distance")
@@ -2656,23 +2668,30 @@ class MESH:
                                                      block=(1, 1, 1), grid=(1, 1, 1))
 
                         # copia posicao e velocidade para vetores temporarios
+                        total = 2 * self.params.population_size + self.params.memory_size
+                        div = int(np.ceil(total/1024))
+
                         cuda.memcpy_htod(self.params.current_memory_size_g, tam_front[0])
                         copy3 = self.mod.get_function("copy3")
                         copy3(self.position_g, self.aux_g, self.params.position_dim_g,
-                              block=(int(2 * self.params.population_size + self.params.memory_size), 1, 1),
-                              grid=(1, 1, 1))
+                              self.params.population_size_g, self.params.memory_size_g,
+                              block=(int(np.ceil(total/div)), 1, 1),
+                              grid=(div, 1, 1))
                         cuda.Context.synchronize()
                         copy3(self.velocity_g, self.aux2_g, self.params.position_dim_g,
-                              block=(int(2 * self.params.population_size + self.params.memory_size), 1, 1),
-                              grid=(1, 1, 1))
+                              self.params.population_size_g, self.params.memory_size_g,
+                              block=(int(np.ceil(total/div)), 1, 1),
+                              grid=(div, 1, 1))
                         cuda.Context.synchronize()
 
                         # coloca 1e20 na sposicoes e fitness
+                        div = int(np.ceil(self.params.memory_size/1024))
                         memory_inicialization4 = self.mod.get_function("memory_inicialization4")
                         memory_inicialization4(self.position_g, self.fitness_g,
                                                self.params.position_dim_g, self.params.objectives_dim_g,
                                                self.params.population_size_g, self.aux_g,
-                                               block=(int(self.params.memory_size), 1, 1), grid=(1, 1, 1))
+                                               block=(int(np.ceil(self.params.memory_size/div)), 1, 1),
+                                               grid=(div, 1, 1))
                         cuda.Context.synchronize()
 
                         # inicializa a nova memoria
@@ -2681,7 +2700,8 @@ class MESH:
                                                self.aux_g, self.aux2_g, self.front0_g,
                                                self.params.position_dim_g, self.params.objectives_dim_g,
                                                self.params.population_size_g,
-                                               block=(int(self.params.memory_size), 1, 1), grid=(1, 1, 1))
+                                               block=(int(np.ceil(self.params.memory_size/div)), 1, 1),
+                                               grid=(div, 1, 1))
                         cuda.Context.synchronize()
 
                         # atualizar fitness da memoria nova

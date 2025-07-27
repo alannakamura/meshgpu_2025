@@ -17,7 +17,7 @@ for j in range(len(problem)):
 
     num = 100
     iterations = 50
-    population = 128
+    population = 256
     pos_dim = 3
 
     f = open('results.pkl', 'wb')
