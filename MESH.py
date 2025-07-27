@@ -1660,7 +1660,6 @@ class MESH:
 
             if self.gpu:
                 div = int(np.ceil(self.params.population_size / 1024))
-                # div2 = int(np.ceil(self.params.position_dim / 8))
 
                 function = self.mod.get_function("function1")
                 function(self.params.func_n_g, self.position_g, self.params.position_dim_g,
@@ -1732,52 +1731,52 @@ class MESH:
                                            block=(int(np.ceil(tam_fronts[0]/div)), 1, 1),
                                            grid=(div, 1, 1))
                     cuda.Context.synchronize()
-                else:
-                    # esse trecho nunca e usado se o tamanho da memoria e igual ao da populacao
-
-                    # o tamanho da memoria inicial sera o tamanho maximo
-                    cuda.memcpy_htod(self.params.current_memory_size_g, self.params.memory_size)
-
-                    # zera todas as posicoes do vetor crowding distance
-
-                    div = int(np.ceil(self.params.population_size/1024))
-
-                    crowding_distance_inicialization = self.mod.get_function("crowding_distance_inicialization")
-                    crowding_distance_inicialization(self.crowding_distance_g,
-                                                     block=(int(np.ceil(self.params.population_size/div)), 1, 1),
-                                                     grid=(1, 1, 1))
-                    cuda.Context.synchronize()
-
-
-                    teste2 = np.zeros(2 * self.params.population_size, dtype=np.int32)
-
-                    # i_g sera uma variavel em gpu que indica qual dimensao se esta calculando
-                    i_g = cuda.mem_alloc(np.array([1], np.int32).nbytes)
-                    for i in range(self.params.objectives_dim):
-                        # ordena o front 0 de acordo com o valor de fitness da dimensao i
-                        cuda.memcpy_htod(i_g, np.array([i], dtype=np.int32))
-                        front_sort = self.mod.get_function("front_sort")
-                        front_sort(self.fronts_g, self.tams_fronts_g, self.fitness_g,
-                                   self.params.objectives_dim_g, i_g, self.crowding_distance_g,
-                                   block=(1, 1, 1), grid=(1, 1, 1))
-                        cuda.Context.synchronize()
-
-
-                        crowding_distance = self.mod.get_function("crowding_distance")
-                        crowding_distance(self.fronts_g, self.tams_fronts_g, self.fitness_g,
-                                          self.params.objectives_dim_g, self.tams_fronts_g, i_g,
-                                          self.crowding_distance_g,
-                                          block=(int(teste[0] - 2), 1, 1), grid=(1, 1, 1))
-                    front_sort_crowding_distance = self.mod.get_function("front_sort_crowding_distance")
-                    front_sort_crowding_distance(self.fronts_g, self.tams_fronts_g,
-                                                 self.crowding_distance_g,
-                                                 block=(1, 1, 1), grid=(1, 1, 1))
-                    memory_inicialization2 = self.mod.get_function("memory_inicialization2")
-                    memory_inicialization2(self.position_g, self.fitness_g, self.fronts_g,
-                                           self.params.position_dim_g, self.params.objectives_dim_g,
-                                           self.params.population_size_g,
-                                           block=(self.params.memory_size, 1, 1), grid=(1, 1, 1))
-                    cuda.Context.synchronize()
+                # else:
+                #     # esse trecho nunca e usado se o tamanho da memoria e igual ao da populacao
+                #
+                #     # o tamanho da memoria inicial sera o tamanho maximo
+                #     cuda.memcpy_htod(self.params.current_memory_size_g, self.params.memory_size)
+                #
+                #     # zera todas as posicoes do vetor crowding distance
+                #
+                #     div = int(np.ceil(self.params.population_size/1024))
+                #
+                #     crowding_distance_inicialization = self.mod.get_function("crowding_distance_inicialization")
+                #     crowding_distance_inicialization(self.crowding_distance_g,
+                #                                      block=(int(np.ceil(self.params.population_size/div)), 1, 1),
+                #                                      grid=(1, 1, 1))
+                #     cuda.Context.synchronize()
+                #
+                #
+                #     teste2 = np.zeros(2 * self.params.population_size, dtype=np.int32)
+                #
+                #     # i_g sera uma variavel em gpu que indica qual dimensao se esta calculando
+                #     i_g = cuda.mem_alloc(np.array([1], np.int32).nbytes)
+                #     for i in range(self.params.objectives_dim):
+                #         # ordena o front 0 de acordo com o valor de fitness da dimensao i
+                #         cuda.memcpy_htod(i_g, np.array([i], dtype=np.int32))
+                #         front_sort = self.mod.get_function("front_sort")
+                #         front_sort(self.fronts_g, self.tams_fronts_g, self.fitness_g,
+                #                    self.params.objectives_dim_g, i_g, self.crowding_distance_g,
+                #                    block=(1, 1, 1), grid=(1, 1, 1))
+                #         cuda.Context.synchronize()
+                #
+                #
+                #         crowding_distance = self.mod.get_function("crowding_distance")
+                #         crowding_distance(self.fronts_g, self.tams_fronts_g, self.fitness_g,
+                #                           self.params.objectives_dim_g, self.tams_fronts_g, i_g,
+                #                           self.crowding_distance_g,
+                #                           block=(int(teste[0] - 2), 1, 1), grid=(1, 1, 1))
+                #     front_sort_crowding_distance = self.mod.get_function("front_sort_crowding_distance")
+                #     front_sort_crowding_distance(self.fronts_g, self.tams_fronts_g,
+                #                                  self.crowding_distance_g,
+                #                                  block=(1, 1, 1), grid=(1, 1, 1))
+                #     memory_inicialization2 = self.mod.get_function("memory_inicialization2")
+                #     memory_inicialization2(self.position_g, self.fitness_g, self.fronts_g,
+                #                            self.params.position_dim_g, self.params.objectives_dim_g,
+                #                            self.params.population_size_g,
+                #                            block=(self.params.memory_size, 1, 1), grid=(1, 1, 1))
+                #     cuda.Context.synchronize()
 
             while not self.stopping_criteria_reached:
                 # encontra os melhores globais de cada particula
@@ -1937,8 +1936,10 @@ class MESH:
                         # zerar vetor crowding distance
                         div = int(np.ceil(self.params.population_size / 1024))
                         crowding_distance_inicialization =self.mod.get_function("crowding_distance_inicialization")
-                        crowding_distance_inicialization(self.crowding_distance_g, self.params.population_size_g,
-                                                         block=(int(np.ceil(self.params.population_size/div)), 1, 1),
+                        crowding_distance_inicialization(self.crowding_distance_g,
+                                                         self.params.population_size_g,
+                                                         block=(int(np.ceil(self.params.population_size/div)),
+                                                                1, 1),
                                                          grid=(div, 1, 1))
                         cuda.Context.synchronize()
 
@@ -2280,11 +2281,14 @@ class MESH:
                         # zerar vetor crowding distance
 
                         # parei aqui em 240725
-                        div = int(np.ceil(2*self.params.population_size/1024))
+                        # div = int(np.ceil(2*self.params.population_size/1024))
+                        div = int(np.ceil(teste_tam[-1] / 1024))
 
-                        crowding_distance_inicialization2 = self.mod.get_function("crowding_distance_inicialization2")
+                        crowding_distance_inicialization2 = self.mod.get_function(
+                            "crowding_distance_inicialization2")
                         crowding_distance_inicialization2(self.crowding_distance_g,
-                                                         block=(int(np.ceil(2*self.params.population_size/div)), 1, 1),
+                                                         block=(int(np.ceil(2*self.params.population_size/div)),
+                                                                1, 1),
                                                          grid=(div, 1, 1))
                         cuda.Context.synchronize()
 
@@ -2295,9 +2299,11 @@ class MESH:
                         # a ideia seria ordenar pro crowding distance e no final voltar a ordem inicial para evitar ter
                         # que recalcular os fronts
 
-                        population_index_inicialization = self.mod.get_function("population_index_inicialization")
+                        population_index_inicialization = self.mod.get_function(
+                            "population_index_inicialization")
                         population_index_inicialization(self.population_index_g, self.params.population_size_g,
-                                                        block=(int(np.ceil(2*self.params.population_size/div)), 1, 1),
+                                                        block=(int(np.ceil(2*self.params.population_size/div)),
+                                                               1, 1),
                                                         grid=(div, 1, 1))
                         cuda.Context.synchronize()
 
@@ -2316,21 +2322,22 @@ class MESH:
                             # ordena os vetores de indice e os crowding distance de acordo com
                             # o fitness da dimensao
                             for j in range(2*self.params.population_size):
-                                front_sort5_par = self.mod.get_function("front_sort5_par")
-                                front_sort5_par(self.fitness_g,
-                                                self.params.objectives_dim_g, i_g, self.crowding_distance_g,
-                                                self.params.population_size_g, self.population_index_g,
-                                                block=(int(np.ceil(self.params.population_size/div)), 1, 1),
-                                                grid=(div, 1, 1))
-                                cuda.Context.synchronize()
-
-                                front_sort5_impar = self.mod.get_function("front_sort5_impar")
-                                front_sort5_impar(self.fitness_g,
-                                                  self.params.objectives_dim_g, i_g, self.crowding_distance_g,
-                                                  self.params.population_size_g, self.population_index_g,
-                                                  block=(int(np.ceil(self.params.population_size)/div) - 1, 1, 1),
-                                                  grid=(div, 1, 1))
-                                cuda.Context.synchronize()
+                                if j % 2 == 0:
+                                    front_sort5_par = self.mod.get_function("front_sort5_par")
+                                    front_sort5_par(self.fitness_g,
+                                                    self.params.objectives_dim_g, i_g, self.crowding_distance_g,
+                                                    self.params.population_size_g, self.population_index_g,
+                                                    block=(int(np.ceil(self.params.population_size/div)), 1, 1),
+                                                    grid=(div, 1, 1))
+                                    cuda.Context.synchronize()
+                                else:
+                                    front_sort5_impar = self.mod.get_function("front_sort5_impar")
+                                    front_sort5_impar(self.fitness_g,
+                                                      self.params.objectives_dim_g, i_g, self.crowding_distance_g,
+                                                      self.params.population_size_g, self.population_index_g,
+                                                      block=(int(np.ceil(self.params.population_size)/div) - 1, 1, 1),
+                                                      grid=(div, 1, 1))
+                                    cuda.Context.synchronize()
 
                             crowding_distance4 = self.mod.get_function("crowding_distance4")
                             crowding_distance4(self.fitness_g,
@@ -2340,17 +2347,16 @@ class MESH:
                                                block=(int(np.ceil(2*self.params.population_size/div2)) - 2, 1, 1),
                                                grid=(div2, 1, 1))
 
-                        # testar se e necessario reordenar o vetor de indices 260525
-                        # for j in range(self.params.population_size):
-                        #     index_sort_par = self.mod.get_function("index_sort_par")
-                        #     index_sort_par(self.crowding_distance_g, self.population_index_g,
-                        #                    block=(int(self.params.population_size / 2), 1, 1), grid=(1, 1, 1))
-                        #     cuda.Context.synchronize()
-                        #
-                        #     index_sort_impar = self.mod.get_function("index_sort_impar")
-                        #     index_sort_impar(self.crowding_distance_g, self.population_index_g,
-                        #                      block=(int(self.params.population_size / 2) - 1, 1, 1), grid=(1, 1, 1))
-                        #     cuda.Context.synchronize()
+                        for j in range(self.params.population_size):
+                            index_sort_par = self.mod.get_function("index_sort_par")
+                            index_sort_par(self.crowding_distance_g, self.population_index_g,
+                                           block=(int(self.params.population_size / 2), 1, 1), grid=(1, 1, 1))
+                            cuda.Context.synchronize()
+
+                            index_sort_impar = self.mod.get_function("index_sort_impar")
+                            index_sort_impar(self.crowding_distance_g, self.population_index_g,
+                                             block=(int(self.params.population_size / 2) - 1, 1, 1), grid=(1, 1, 1))
+                            cuda.Context.synchronize()
 
                         # ordenada o front a ser quebrado em ordem decrescente de cd.
                         # apos isso, os tam_pop primeiros indices de fronts erao os selecionados

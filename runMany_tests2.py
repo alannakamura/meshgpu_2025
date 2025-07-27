@@ -3,7 +3,7 @@ from tqdm import tqdm
 import os
 import pycuda.driver as drv
 
-problem = [1,4]
+problem = [4]
 # problem = [31,32]
 # problem = [11,12,13,14,16]
 # problem = [1,2,3,4,5,6,7]
@@ -16,8 +16,8 @@ for j in range(len(problem)):
     # GPU = '4060'
 
     num = 100
-    iterations = 50
-    population = 256
+    iterations = 100
+    population = 128
     pos_dim = 3
 
     f = open('results.pkl', 'wb')

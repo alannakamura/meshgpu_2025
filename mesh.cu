@@ -1945,7 +1945,7 @@ __global__ void front_sort5_par(double *fitness, int *dim_fitness, int *i,
 double *crowd_distance, int *tam_pop, int *index)
 {
     int temp;
-//     double temp2;
+    double temp2;
 //     int j = threadIdx.x*2;
     int j = (blockIdx.x*blockDim.x+threadIdx.x)*2;
 
@@ -1958,9 +1958,9 @@ double *crowd_distance, int *tam_pop, int *index)
                     index[j] = index[j+1];
                     index[j+1] = temp;
     //                 testar depois
-    //                 temp2 = crowd_distance[j];
-    //                 crowd_distance[j] = crowd_distance[j+1];
-    //                 crowd_distance[j+1] = temp2;
+                    temp2 = crowd_distance[j];
+                    crowd_distance[j] = crowd_distance[j+1];
+                    crowd_distance[j+1] = temp2;
         }
     }
 }
@@ -1969,7 +1969,7 @@ __global__ void front_sort5_impar(double *fitness, int *dim_fitness, int *i,
 double *crowd_distance, int *tam_pop, int *index)
 {
     int temp;
-//     double temp2;
+    double temp2;
     int j = (blockIdx.x*blockDim.x+threadIdx.x)*2+1;
 
     if(j<2*tam_pop[0])
@@ -1981,9 +1981,9 @@ double *crowd_distance, int *tam_pop, int *index)
                     index[j] = index[j+1];
                     index[j+1] = temp;
     //                 testar depois
-    //                 temp2 = crowd_distance[j];
-    //                 crowd_distance[j] = crowd_distance[j+1];
-    //                 crowd_distance[j+1] = temp2;
+                    temp2 = crowd_distance[j];
+                    crowd_distance[j] = crowd_distance[j+1];
+                    crowd_distance[j+1] = temp2;
         }
     }
 }
@@ -3590,7 +3590,7 @@ __global__ void population_index_inicialization(int *index, int* tam_pop)
 __global__ void index_sort_par(double *crowd_distance, int *index)
 {
     int temp;
-//     double temp2;
+    double temp2;
     int j = threadIdx.x*2;
 
     if(index[j]>index[j+1])
@@ -3599,16 +3599,16 @@ __global__ void index_sort_par(double *crowd_distance, int *index)
                 temp = index[j];
                 index[j] = index[j+1];
                 index[j+1] = temp;
-//                 temp2 = crowd_distance[j];
-//                 crowd_distance[j] = crowd_distance[j+1];
-//                 crowd_distance[j+1] = temp2;
+                temp2 = crowd_distance[j];
+                crowd_distance[j] = crowd_distance[j+1];
+                crowd_distance[j+1] = temp2;
     }
 }
 
 __global__ void index_sort_impar(double *crowd_distance, int *index)
 {
     int temp;
-//     double temp2;
+    double temp2;
     int j = threadIdx.x*2+1;
 
     if(index[j]>index[j+1])
@@ -3617,9 +3617,9 @@ __global__ void index_sort_impar(double *crowd_distance, int *index)
                 temp = index[j];
                 index[j] = index[j+1];
                 index[j+1] = temp;
-//                 temp2 = crowd_distance[j];
-//                 crowd_distance[j] = crowd_distance[j+1];
-//                 crowd_distance[j+1] = temp2;
+                temp2 = crowd_distance[j];
+                crowd_distance[j] = crowd_distance[j+1];
+                crowd_distance[j+1] = temp2;
     }
 }
 
