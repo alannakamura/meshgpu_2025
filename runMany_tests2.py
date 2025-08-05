@@ -16,7 +16,7 @@ for j in range(len(problem)):
     # GPU = '4060'
 
     num = 100
-    iterations = 100
+    iterations = 30
     population = 128
     pos_dim = 3
 
