@@ -12,13 +12,14 @@ alpha = [1.0]*len(problem)
 for j in range(len(problem)):
     print('problem', problem[j])
 
-    GPU = '3060'
+    # GPU = '3060'
     # GPU = '4060'
+    GPU = '5070'
 
     num = 100
-    iterations = 30
+    iterations = 100
     population = 128
-    pos_dim = 3
+    pos_dim = 10
 
     f = open('results.pkl', 'wb')
     results = {'count': -1, 'cpu': [], 'gpu': [], 'problem': problem[j],
