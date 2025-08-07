@@ -1,4 +1,8 @@
 from pymoo.algorithms.moo.nsga2 import NSGA2
+from pymoo.algorithms.moo.nsga3 import NSGA3
+from pymoo.algorithms.moo.moead import MOEAD
+from pymoo.algorithms.moo.rvea import RVEA
+from pymoo.util.ref_dirs import get_reference_directions
 from pymoo.problems.many.wfg import WFG1
 from pymoo.operators.sampling.rnd import FloatRandomSampling
 from pymoo.operators.crossover.sbx import SBX
@@ -10,27 +14,32 @@ import numpy as np
 import pickle
 import pygmo as pg
 from matplotlib.pyplot import plot
+from pygmo import hypervolume
 
 l = []
-dim =2
+dim = 2
 c = np.empty((0, 2))
 f = open('wfg1', 'wb')
 
 # Problema
 problem = WFG1(n_var=12, n_obj=dim, k=4)
+pymoo_par = problem.pareto_front()
+ref = 5,5
+hv1 = hypervolume(pymoo_par)
+res1 = hv1.compute(ref)
+print(res1)
+
 
 # Parada
 termination = get_termination("n_gen", 30)
 
 s = Scatter(title="NSGA-II on WFG1")
+
+# NSGA-2
 for i in range(30):
     # Algoritmo
     algorithm = NSGA2(
         pop_size=100,
-        sampling=FloatRandomSampling(),
-        crossover=SBX(eta=20, prob=0.9),
-        mutation=PM(eta=20),
-        eliminate_duplicates=True
     )
 
     # Otimização
@@ -47,11 +56,89 @@ for i in range(30):
     c = np.concatenate((c, res.F), axis=0)
     pass
 
+# MOEAD
+for i in range(30):
+    # Gerar os vetores de referência com método das divisões uniformes
+    ref_dirs = get_reference_directions("das-dennis", 2, n_partitions=99)
+    a = len(ref_dirs)
+
+    algorithm = MOEAD(
+        ref_dirs=ref_dirs,
+    )
+
+    res = minimize(
+        problem,
+        algorithm,
+        termination,
+        seed=i,
+        verbose=True
+    )
+
+    l.append((res.F, res.X))
+    s.add(l[-1][0])
+    c = np.concatenate((c, res.F), axis=0)
+    pass
+
+for i in range(30):
+    # Gerar os vetores de referência com método das divisões uniformes
+    ref_dirs = get_reference_directions("das-dennis", 2, n_partitions=99)
+
+    # Criar algoritmo NSGA-III
+    algorithm = NSGA3(
+        ref_dirs=ref_dirs,
+        pop_size=100,
+    )
+
+    res = minimize(
+        problem,
+        algorithm,
+        termination,
+        seed=i,
+        verbose=True
+    )
+
+    l.append((res.F, res.X))
+    s.add(l[-1][0])
+    c = np.concatenate((c, res.F), axis=0)
+    pass
+
+for i in range(30):
+
+    # Gerar 100 vetores de referência usando 99 partições
+    ref_dirs = get_reference_directions("das-dennis", 2, 99)
+
+    # Configurar o algoritmo RVEA
+    algorithm = RVEA(
+        ref_dirs=ref_dirs,
+    )
+
+    # Executar otimização
+    res = minimize(
+        problem,
+        algorithm,
+        termination,
+        seed=1,
+        verbose=True
+    )
+
+    l.append((res.F, res.X))
+    s.add(l[-1][0])
+    c = np.concatenate((c, res.F), axis=0)
+    pass
+
 fronts = pg.fast_non_dominated_sorting(points=c)[0]
 c = c[fronts[0]]
 s.add(c, marker='s',color='red')
+s.add(pymoo_par, marker='s',color='blue')
 pickle.dump(l, f)
 f.close()
+
+hv2 = hypervolume(c)
+res2 = hv2.compute(ref)
+print(res1)
+print(res2)
+print(abs(res2-res1))
+
 # Plot
 
 # s = Scatter(title="NSGA-II on WFG1")
