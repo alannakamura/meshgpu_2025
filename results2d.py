@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import datetime as dt
 from optimisationMap import *
+import pickle
 
 
 # name_file = 'results.pkl'
@@ -15,6 +16,7 @@ from optimisationMap import *
 # name_file = 'results_14_100sim_50iter_128pop_3posdim_1.0alpha_3060.pkl'
 # name_file = 'results_16_100sim_50iter_128pop_3posdim_1.0alpha_3060.pkl'
 # name_file = 'results_32_100sim_100iter_128pop_3posdim_1.0alpha_3060.pkl'
+name_file = 'results_21_30sim_100iter_256pop_12posdim_1.0alpha_4060.pkl'
 
 f = open(name_file, 'rb')
 results = pickle.load(f)
@@ -31,7 +33,13 @@ if name_problem == 'wfg1':
 else:
     problem = get_problem(name_problem, n_var = pos_dim)
 
-pf_a = problem.pareto_front()
+if name_problem == 'wfg1':
+    f = open('wfg1.pkl','rb')
+    pf_b = pickle.load(f)
+    pf_a = problem.pareto_front()
+    f.close()
+else:
+    pf_a = problem.pareto_front()
 # pf_a = problem.pareto_front(use_cache=False)
 
 fit = []
@@ -66,11 +74,18 @@ ref = [x, y]
 
 print('ref', ref)
 
-plt.figure()
-plt.plot(pf_a[:, 0], pf_a[:, 1], 'ro', fit[:, 0], fit[:, 1], 'bo')
-plt.title('after fast non dominating sorting')
-plt.legend(['pareto', 'GPU'])
-plt.show()
+if name_problem != 'wfg1':
+    plt.figure()
+    plt.plot(pf_a[:, 0], pf_a[:, 1], 'ro', fit[:, 0], fit[:, 1], 'bo')
+    plt.title('after fast non dominating sorting')
+    plt.legend(['pareto', 'GPU'])
+    plt.show()
+else:
+    plt.figure()
+    plt.plot(pf_a[:, 0], pf_a[:, 1], 'ro', pf_b[:, 0], pf_b[:, 1], 'mo', fit[:, 0], fit[:, 1], 'bo')
+    plt.title('after fast non dominating sorting')
+    plt.legend(['pareto pymoo', 'pareto teste', 'GPU'])
+    plt.show()
 
 plt.figure()
 plt.plot(pf_a[:, 0], pf_a[:, 1], 'ro')

@@ -101,6 +101,7 @@ for func_n in [int(problem)]:
         position_min_value = [0] * position_dim
         for i in range(position_dim):
             position_max_value[i] = 2*(i+1)
+            # position_max_value[i] = 1
 
     # population_size = 100
     population_size = population

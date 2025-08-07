@@ -1142,10 +1142,10 @@ __device__ void mw10(double *position, int *position_dim, double *fitness, int i
 __device__ double s_linear(double y, double a)
 {
     double temp, temp2;
-    temp = floorf(a-y);
+    temp = floor(a-y);
     temp = temp+a;
-    temp = fabsf(temp);
-    temp2 = fabsf(y-a);
+    temp = fabs(temp);
+    temp2 = fabs(y-a);
     return temp2/temp;
 }
 
@@ -1209,6 +1209,12 @@ __device__ void wfg1(double *position, int *position_dim, double *fitness, int i
         y[j] = position[i*position_dim[0]+j]/xu;
     }
 
+//     for(j=0;j<position_dim[0];j++)
+//     {
+//         xu = (double)(j+1)*2.0;
+//         y[j] = position[i*position_dim[0]+j]*xu;
+//     }
+
 //     if(i==0)
 //     {
 //         printf("z0 = %lf z1 = %lf\n", y[0], y[1]);
@@ -1223,6 +1229,7 @@ __device__ void wfg1(double *position, int *position_dim, double *fitness, int i
 //         printf("y4 = %0.2lf y5 = %0.2lf y6 = %0.2lf y7 = %0.2lf y8 = %0.2lf y9 = %0.2lf\n", y[4], y[5], y[6], y[7], y[8], y[9]);
 //     }
     for(j=k;j<position_dim[0];j++)
+//     for(j=0;j<k;j++)
     {
         y[j] =b_flat(y[j], 0.8, 0.75, 0.85);
     }

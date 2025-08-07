@@ -4,7 +4,7 @@ from pymoo.algorithms.moo.moead import MOEAD
 from pymoo.algorithms.moo.rvea import RVEA
 from pymoo.algorithms.moo.spea2 import SPEA2
 from pymoo.util.ref_dirs import get_reference_directions
-from pymoo.problems.many.wfg import WFG1
+from pymoo.problems.many.wfg import WFG2
 from pymoo.termination import get_termination
 from pymoo.optimize import minimize
 from pymoo.visualization.scatter import Scatter
@@ -20,7 +20,7 @@ c = np.empty((0, 2))
 f = open('wfg1.pkl', 'wb')
 
 # Problema
-problem = WFG1(n_var=12, n_obj=dim, k=4)
+problem = WFG2(n_var=12, n_obj=dim, k=4)
 pymoo_par = problem.pareto_front()
 ref = 5,5
 hv1 = hypervolume(pymoo_par)
