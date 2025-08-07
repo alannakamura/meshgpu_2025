@@ -2,11 +2,9 @@ from pymoo.algorithms.moo.nsga2 import NSGA2
 from pymoo.algorithms.moo.nsga3 import NSGA3
 from pymoo.algorithms.moo.moead import MOEAD
 from pymoo.algorithms.moo.rvea import RVEA
+from pymoo.algorithms.moo.spea2 import SPEA2
 from pymoo.util.ref_dirs import get_reference_directions
 from pymoo.problems.many.wfg import WFG1
-from pymoo.operators.sampling.rnd import FloatRandomSampling
-from pymoo.operators.crossover.sbx import SBX
-from pymoo.operators.mutation.pm import PM
 from pymoo.termination import get_termination
 from pymoo.optimize import minimize
 from pymoo.visualization.scatter import Scatter
@@ -19,7 +17,7 @@ from pygmo import hypervolume
 l = []
 dim = 2
 c = np.empty((0, 2))
-f = open('wfg1', 'wb')
+f = open('wfg1.pkl', 'wb')
 
 # Problema
 problem = WFG1(n_var=12, n_obj=dim, k=4)
@@ -105,7 +103,7 @@ for i in range(30):
 for i in range(30):
 
     # Gerar 100 vetores de referência usando 99 partições
-    ref_dirs = get_reference_directions("das-dennis", 2, 99)
+    ref_dirs = get_reference_directions("das-dennis", 2, n_partitions=99)
 
     # Configurar o algoritmo RVEA
     algorithm = RVEA(
@@ -126,11 +124,32 @@ for i in range(30):
     c = np.concatenate((c, res.F), axis=0)
     pass
 
+# SPEA-2
+for i in range(30):
+    # Algoritmo
+    algorithm = SPEA2(
+        pop_size=100,
+    )
+
+    # Otimização
+    res = minimize(
+        problem,
+        algorithm,
+        termination,
+        seed=i,
+        verbose=True
+    )
+
+    l.append((res.F, res.X))
+    s.add(l[-1][0])
+    c = np.concatenate((c, res.F), axis=0)
+    pass
+
 fronts = pg.fast_non_dominated_sorting(points=c)[0]
 c = c[fronts[0]]
 s.add(c, marker='s',color='red')
 s.add(pymoo_par, marker='s',color='blue')
-pickle.dump(l, f)
+pickle.dump(c, f)
 f.close()
 
 hv2 = hypervolume(c)
