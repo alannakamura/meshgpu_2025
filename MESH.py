@@ -2287,9 +2287,15 @@ class MESH:
                         crowding_distance_inicialization2 = self.mod.get_function(
                             "crowding_distance_inicialization2")
                         crowding_distance_inicialization2(self.crowding_distance_g,
-                                                         block=(int(np.ceil(2*self.params.population_size/div)),
+                                                         block=(int(np.ceil(teste_tam[-1]/div)),
                                                                 1, 1),
                                                          grid=(div, 1, 1))
+
+                        # crowding_distance_inicialization2(self.crowding_distance_g,
+                        #                                   block=(int(np.ceil(2 * self.params.population_size / div)),
+                        #                                          1, 1),
+                        #                                   grid=(div, 1, 1))
+
                         cuda.Context.synchronize()
 
                         # inicializa o vetor population_index_g,que guarda inicialmente a posicao de cada
