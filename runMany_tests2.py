@@ -13,13 +13,13 @@ for j in range(len(problem)):
     print('problem', problem[j])
 
     # GPU = '3060'
-    # GPU = '4060'
-    GPU = '5070'
+    GPU = '4060'
+    # GPU = '5070'
 
     num = 100
     iterations = 30
-    population = 128
-    pos_dim = 10
+    population = 512
+    pos_dim = 3
 
     f = open('results.pkl', 'wb')
     results = {'count': -1, 'cpu': [], 'gpu': [], 'problem': problem[j],
