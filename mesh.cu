@@ -1157,15 +1157,15 @@ __device__ double b_flat(double y, double a, double b, double c)
     temp = temp*a;
     temp = temp/b;
     temp2 = y-b;
-    temp2 = floorf(temp2);
-    temp2 = fminf(0.0, temp2);
+    temp2 = floor(temp2);
+    temp2 = fmin(0.0, temp2);
     temp = temp*temp2;
 
     temp2 = (1.0-a)*(y-c);
     temp2 = temp2/(1.0-c);
     temp3 = c-y;
-    temp3 = floorf(temp3);
-    temp3 = fminf(0.0, temp3);
+    temp3 = floor(temp3);
+    temp3 = fmin(0.0, temp3);
     temp2 = temp2*temp3;
 
     return a+temp-temp2;
@@ -1174,7 +1174,7 @@ __device__ double b_flat(double y, double a, double b, double c)
 
 __device__ double b_poly(double y, double a)
 {
-    return powf(y, a);
+    return pow(y, a);
 }
 
 __device__ double convex1(double *x)
