@@ -45,7 +45,7 @@ import pycuda.autoinit
 import pycuda.driver as cuda
 from pycuda.compiler import SourceModule
 from pycuda.curandom import *
-# import cupy as cp
+import cupy as cp
 import struct
 from datetime import datetime as dt
 import sys
@@ -96,7 +96,8 @@ class MESH_Params:
 
         self.population_size = population_size
 
-        self.memory_size = memory_size
+        # self.memory_size = memory_size
+        self.memory_size = np.array(memory_size, dtype=np.int32)
         self.memory_update_type = memory_update_type
 
         self.global_best_attribution_type = global_best_attribution_type
@@ -169,8 +170,9 @@ class MESH_Params:
 
         self.memory_size_g = (
             cuda.mem_alloc(np.array(self.memory_size, dtype=np.int32).nbytes))
-        cuda.memcpy_htod(self.memory_size_g,
-                         np.array(self.memory_size, dtype=np.int32))
+        # cuda.memcpy_htod(self.memory_size_g,
+        #                  np.array(self.memory_size, dtype=np.int32))
+        cuda.memcpy_htod(self.memory_size_g, self.memory_size)
 
         self.current_memory_size = 0
 
@@ -1648,6 +1650,14 @@ class MESH:
 
     def run(self, func='ZDT1', teste_grafico=False, teste_tempo = False):
 
+        # cp.cuda.Device(0).use()
+        # _ = cp.zeros(1, dtype=cp.float32)
+        #
+        # cuda.init()
+        # dev = cuda.Device(0)
+        # ctx = dev.retain_primary_context()  # pega o primary context (mesmo do CuPy)
+        # ctx.push()
+
         #teste de tempo
         cpu = 10*[0]
         gpu = 10*[0]
@@ -1990,6 +2000,11 @@ class MESH:
                         cuda.Context.synchronize()
 
                         cuda.memcpy_htod(self.params.current_memory_size_g, self.params.memory_size)
+                        # try:
+                        #     cuda.memcpy_htod(self.params.current_memory_size_g, self.params.memory_size)
+                        # except Exception:
+                        #     print(self.params.memory_size, type(self.params.memory_size))
+                        #     exit(0)
 
                     gpu[1] += (dt.now() - start).total_seconds()
 
@@ -2041,7 +2056,8 @@ class MESH:
                     div = int(np.ceil(self.params.population_size *
                                       self.params.personal_guide_array_size *
                                       self.params.objectives_dim / 1024))
-                    copy(self.personal_best_fitness_g,
+                    copy(self.personal_best_fitness_g, self.params.objectives_dim_g,
+                          self.params.personal_guide_array_size_g, self.params.population_size_g,
                          block=(int(np.ceil(self.params.population_size * self.params.objectives_dim *
                                             self.params.personal_guide_array_size / div)),
                                 1, 1), grid=(div, 1, 1))
