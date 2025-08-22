@@ -45,7 +45,7 @@ import pycuda.autoinit
 import pycuda.driver as cuda
 from pycuda.compiler import SourceModule
 from pycuda.curandom import *
-import cupy as cp
+# import cupy as cp
 import struct
 from datetime import datetime as dt
 import sys
@@ -2632,7 +2632,7 @@ class MESH:
                         memory_inicialization4 = self.mod.get_function("memory_inicialization4")
                         memory_inicialization4(self.position_g, self.fitness_g,
                                                self.params.position_dim_g, self.params.objectives_dim_g,
-                                               self.params.population_size_g, self.aux_g,
+                                               self.params.population_size_g, self.aux_g, self.params.memory_size_g,
                                                block=(int(np.ceil(self.params.memory_size/div)), 1, 1),
                                                grid=(div, 1, 1))
                         cuda.Context.synchronize()
