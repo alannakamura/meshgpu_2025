@@ -15,7 +15,7 @@ import pickle
 # name_file = 'results_14_100sim_50iter_128pop_3posdim_1.0alpha_3060.pkl'
 # name_file = 'results_16_100sim_50iter_128pop_3posdim_1.0alpha_3060.pkl'
 # name_file = 'results_32_100sim_100iter_128pop_3posdim_1.0alpha_3060.pkl'
-name_file = 'testes/230825/results_14_30sim_8000iter_128pop_100posdim_1.0alpha_5070.pkl'
+name_file = 'results_13_30sim_100iter_128pop_50posdim_1.0alpha_5070_Ti.pkl'
 
 f = open(name_file, 'rb')
 results = pickle.load(f)
@@ -53,11 +53,11 @@ for i in range(sim):
 
 fit = np.array(fit)
 
-plt.figure()
-plt.title('all memory points ')
-plt.plot(pf_a[:, 0], pf_a[:, 1], 'ro', fit[:, 0], fit[:, 1], 'bo')
-plt.legend(['paretto', 'GPU'])
-plt.show()
+# plt.figure()
+# plt.title('all memory points ')
+# plt.plot(pf_a[:, 0], pf_a[:, 1], 'ro', fit[:, 0], fit[:, 1], 'bo')
+# plt.legend(['paretto', 'GPU'])
+# plt.show()
 
 a, b, c, d = fast_non_dominated_sorting(points=fit)
 fit = fit[a[0]]
@@ -86,15 +86,15 @@ else:
     plt.legend(['pareto pymoo', 'pareto teste', 'GPU'])
     plt.show()
 
-plt.figure()
-plt.plot(pf_a[:, 0], pf_a[:, 1], 'ro')
-plt.title(name_problem.upper()+ ' PARETO')
-plt.show()
-
-plt.figure()
-plt.plot(fit[:, 0], fit[:, 1], 'ro')
-plt.title(name_problem.upper()+ ' MESH GPU')
-plt.show()
+# plt.figure()
+# plt.plot(pf_a[:, 0], pf_a[:, 1], 'ro')
+# plt.title(name_problem.upper()+ ' PARETO')
+# plt.show()
+#
+# plt.figure()
+# plt.plot(fit[:, 0], fit[:, 1], 'ro')
+# plt.title(name_problem.upper()+ ' MESH GPU')
+# plt.show()
 
 hv = hypervolume(pf_a)
 print('hypervolume_paretto', hv.compute(ref))
@@ -105,17 +105,17 @@ print('hypervolume_gpu', hv2.compute(ref))
 gpu_pareto = abs(hv.compute(ref) - hv2.compute(ref))
 print('hypervolume_gpu_pareto', gpu_pareto)
 
-gpu = results['gpu']
-plt.figure()
-plt.title(name_problem.upper()+ ' GPU times')
-df = pd.DataFrame(gpu)
-df.boxplot()
-print('GPU\n', df.describe())
-plt.show()
+# gpu = results['gpu']
+# plt.figure()
+# plt.title(name_problem.upper()+ ' GPU times')
+# df = pd.DataFrame(gpu)
+# df.boxplot()
+# print('GPU\n', df.describe())
+# plt.show()
 
 gpu = results['gpu2']
 plt.figure()
-plt.title(name_problem.upper()+ ' GPU2 times')
+plt.title(name_problem.upper()+ ' GPU times')
 df = pd.DataFrame(gpu)
 df.boxplot()
 print('GPU\n', df.describe())
