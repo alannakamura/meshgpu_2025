@@ -1,9 +1,9 @@
 import pickle
 from tqdm import tqdm
 import os
-import pycuda.driver as drv
+import pycuda.driver as cuda
 
-problem = [14]
+problem = [11]
 # problem = [31,32]
 # problem = [11,12,13,14,16]
 # problem = [4,1,2,3,5,6,7]
@@ -12,12 +12,15 @@ alpha = [1.0]*len(problem)
 for j in range(len(problem)):
     print('problem', problem[j])
 
+    cuda.init()
+    GPU = cuda.Device(0).name().split()[-1]
+
     # GPU = '3060'
     # GPU = '4060'
-    GPU = '5070'
+    # GPU = '5070'
 
-    num = 30
-    iterations = 8000
+    num = 10
+    iterations = 100
     population = 128
     pos_dim = 100
     f = open('results.pkl', 'wb')
