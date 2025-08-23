@@ -13,14 +13,15 @@ for j in range(len(problem)):
     print('problem', problem[j])
 
     cuda.init()
-    GPU = cuda.Device(0).name().split()[-1]
+    GPU = cuda.Device(0).name().split()
+    GPU = '_'.join(GPU[3:])
 
     # GPU = '3060'
     # GPU = '4060'
     # GPU = '5070'
 
-    num = 10
-    iterations = 100
+    num = 1
+    iterations = 1
     population = 128
     pos_dim = 100
     f = open('results.pkl', 'wb')
