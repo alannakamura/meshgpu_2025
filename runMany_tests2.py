@@ -5,7 +5,7 @@ import pycuda.driver as cuda
 
 # problem = [11]
 # problem = [31,32]
-problem = [11,12,13,14,16]
+problem = [11,12,13]
 # problem = [4,1,2,3,5,6,7]
 # problem = [31, 33, 35, 36, 37]
 alpha = [1.0]*len(problem)
@@ -20,10 +20,10 @@ for j in range(len(problem)):
     # GPU = '4060'
     # GPU = '5070'
 
-    num = 30
+    num = 10
     iterations = 100
     population = 128
-    pos_dim = 50
+    pos_dim = 100
     f = open('results.pkl', 'wb')
     results = {'count': -1, 'cpu': [], 'gpu': [], 'problem': problem[j],
                'pos_dim': pos_dim, 'gpu2':[]}

@@ -15,7 +15,7 @@ import pickle
 # name_file = 'results_14_100sim_50iter_128pop_3posdim_1.0alpha_3060.pkl'
 # name_file = 'results_16_100sim_50iter_128pop_3posdim_1.0alpha_3060.pkl'
 # name_file = 'results_32_100sim_100iter_128pop_3posdim_1.0alpha_3060.pkl'
-name_file = 'results_13_30sim_100iter_128pop_50posdim_1.0alpha_5070_Ti.pkl'
+name_file = 'results_11_30sim_100iter_128pop_50posdim_1.0alpha_5070_Ti.pkl'
 
 f = open(name_file, 'rb')
 results = pickle.load(f)
