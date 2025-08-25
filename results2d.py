@@ -15,7 +15,7 @@ import pickle
 # name_file = 'results_14_100sim_50iter_128pop_3posdim_1.0alpha_3060.pkl'
 # name_file = 'results_16_100sim_50iter_128pop_3posdim_1.0alpha_3060.pkl'
 # name_file = 'results_32_100sim_100iter_128pop_3posdim_1.0alpha_3060.pkl'
-name_file = 'results_37_100sim_1200iter_128pop_3posdim_1.0alpha_5070_Ti.pkl'
+name_file = 'testes/250825/results_31_10sim_10iter_128pop_3posdim_1.0alpha_4060.pkl'
 
 f = open(name_file, 'rb')
 results = pickle.load(f)
@@ -66,8 +66,8 @@ x = np.max(fit[:, 0]) + 0.1
 y = np.max(fit[:, 1]) + 0.1
 x2 = np.max(pf_a[:, 0]) + 0.1
 y2 = np.max(pf_a[:, 1]) + 0.1
-x = max(x, x2)
-y = max(y, y2)
+x = float(max(x, x2))
+y = float(max(y, y2))
 ref = [x, y]
 # ref = [2]*2
 

@@ -4,7 +4,7 @@ from pymoo.algorithms.moo.moead import MOEAD
 from pymoo.algorithms.moo.rvea import RVEA
 from pymoo.algorithms.moo.spea2 import SPEA2
 from pymoo.util.ref_dirs import get_reference_directions
-from pymoo.problems.many.wfg import WFG2
+from pymoo.problems.many.wfg import WFG1
 from pymoo.termination import get_termination
 from pymoo.optimize import minimize
 from pymoo.visualization.scatter import Scatter
@@ -20,13 +20,12 @@ c = np.empty((0, 2))
 f = open('wfg1.pkl', 'wb')
 
 # Problema
-problem = WFG2(n_var=12, n_obj=dim, k=4)
+problem = WFG1(n_var=12, n_obj=dim, k=4)
 pymoo_par = problem.pareto_front()
 ref = 5,5
 hv1 = hypervolume(pymoo_par)
 res1 = hv1.compute(ref)
 print(res1)
-
 
 # Parada
 termination = get_termination("n_gen", 30)
@@ -37,7 +36,7 @@ s = Scatter(title="NSGA-II on WFG1")
 for i in range(30):
     # Algoritmo
     algorithm = NSGA2(
-        pop_size=100,
+        pop_size=128,
     )
 
     # Otimização
@@ -52,7 +51,6 @@ for i in range(30):
     l.append((res.F, res.X))
     s.add(l[-1][0])
     c = np.concatenate((c, res.F), axis=0)
-    pass
 
 # MOEAD
 for i in range(30):
@@ -68,7 +66,7 @@ for i in range(30):
         problem,
         algorithm,
         termination,
-        seed=i,
+        seed=i+100,
         verbose=True
     )
 
@@ -84,14 +82,14 @@ for i in range(30):
     # Criar algoritmo NSGA-III
     algorithm = NSGA3(
         ref_dirs=ref_dirs,
-        pop_size=100,
+        pop_size=128,
     )
 
     res = minimize(
         problem,
         algorithm,
         termination,
-        seed=i,
+        seed=i+200,
         verbose=True
     )
 
@@ -115,7 +113,7 @@ for i in range(30):
         problem,
         algorithm,
         termination,
-        seed=1,
+        seed=i+300,
         verbose=True
     )
 
@@ -128,7 +126,7 @@ for i in range(30):
 for i in range(30):
     # Algoritmo
     algorithm = SPEA2(
-        pop_size=100,
+        pop_size=128,
     )
 
     # Otimização
@@ -136,7 +134,7 @@ for i in range(30):
         problem,
         algorithm,
         termination,
-        seed=i,
+        seed=i+400,
         verbose=True
     )
 
