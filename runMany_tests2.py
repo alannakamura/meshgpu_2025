@@ -21,9 +21,9 @@ for j in range(len(problem)):
     # GPU = '5070'
 
     num = 100
-    iterations = 600
+    iterations = 1200
     population = 128
-    pos_dim = 15
+    pos_dim = 3
     f = open('results.pkl', 'wb')
     results = {'count': -1, 'cpu': [], 'gpu': [], 'problem': problem[j],
                'pos_dim': pos_dim, 'gpu2':[]}
