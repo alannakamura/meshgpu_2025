@@ -19,7 +19,7 @@ for j in range(len(problem)):
     num = 100
     iterations = 100
     population = 128
-    pos_dim = 10
+    pos_dim = 3
     f = open('results.pkl', 'wb')
     results = {'count': -1, 'cpu': [], 'gpu': [], 'problem': problem[j],
                'pos_dim': pos_dim, 'gpu2':[]}
