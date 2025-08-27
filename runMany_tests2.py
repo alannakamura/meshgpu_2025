@@ -6,7 +6,7 @@ import pycuda.driver as cuda
 #problem = [13]
 # problem = [31,32]
 # problem = [11,12,13,14,16]
-problem = [4,7]
+problem = [4,7,1,2,3,5,6]
 #problem = [31, 32, 33, 35, 36, 37]
 alpha = [1.0]*len(problem)
 for j in range(len(problem)):
@@ -17,7 +17,7 @@ for j in range(len(problem)):
     GPU = '_'.join(GPU[3:])
 
     num = 100
-    iterations = 100
+    iterations = 50
     population = 128
     pos_dim = 3
     f = open('results.pkl', 'wb')
