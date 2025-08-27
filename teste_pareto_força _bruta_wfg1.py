@@ -7,27 +7,36 @@ import matplotlib.pyplot as plt
 from pygmo import fast_non_dominated_sorting
 
 nt = 1024
-nb = 64
+nb = 1
 n = nb*nt
-v = np.random.rand(n,12)
 
-# for i in range(12):
-#     v[:,i] *= (i+1)*2
+t = int(1e5)
+out2 = np.array([[1e9, 1e9]])
 
-# v.shape = (n,12)
-print(v)
+for i in range(t):
+    v = np.random.rand(n,12)
 
-out = {}
+    for j in range(12):
+        v[:,j] *= (j+1)*2
 
-problem = get_problem('wfg1', n_var=12, n_obj=2)
-print(problem)
+    v.shape = (n,12)
+    # print(v)
 
-problem._evaluate(v, out)
-print(out['F'])
+    out = {}
 
-a, b, c, d = fast_non_dominated_sorting(points=out['F'])
-out2 = out['F'][a[0]]
-plt.plot(out['F'][:,0], out['F'][:,1],'ro', out2[:,0], out2[:,1],'bo')
+    problem = get_problem('wfg1', n_var=12, n_obj=2)
+    # print(problem)
+
+    problem._evaluate(v, out)
+    # print(out['F'])
+
+    out2 = np.concatenate((out2, out['F']), axis=0)
+
+    a, b, c, d = fast_non_dominated_sorting(points=out2)
+    out2 = out2[a[0]]
+    print((i+1)/t)
+
+plt.plot(out2[:,0], out2[:,1],'ro')
 plt.show()
 
 # f = open('mesh.cu')
