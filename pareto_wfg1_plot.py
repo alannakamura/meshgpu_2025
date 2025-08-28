@@ -8,10 +8,11 @@ from pygmo import fast_non_dominated_sorting, hypervolume
 # manual
 f = open('wfg1.pkl', 'rb')
 res_manual = pickle.load(f)
-# show()
 f.close()
 
-
+f = open('wfg1_forca_bruta.pkl', 'rb')
+res_fb = pickle.load(f)
+f.close()
 
 # pareto
 dim = 2
@@ -54,8 +55,9 @@ fit = fit[a[0]]
 
 
 
-plot(res_manual[:,0], res_manual[:,1],'ro', pymoo_par[:,0], pymoo_par[:,1], 'bo', fit[:,0], fit[:,1],'go')
-legend(['manual', 'pymoo', 'MESH GPU'])
+plot(res_manual[:,0], res_manual[:,1],'ro', pymoo_par[:,0], pymoo_par[:,1], 'bo',
+     fit[:,0], fit[:,1],'go', res_fb[:, 0], res_fb[:, 1],'mo')
+legend(['manual', 'pymoo', 'MESH GPU','forca_bruta'])
 
 # ref = 5,5
 # hv1 = hypervolume(pymoo_par)

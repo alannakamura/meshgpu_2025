@@ -5,12 +5,15 @@ from pycuda.compiler import SourceModule
 import pycuda.driver as cuda
 import matplotlib.pyplot as plt
 from pygmo import fast_non_dominated_sorting
+import pickle
+
+f = open('wfg1_forca_bruta.pkl','wb')
 
 nt = 1024
 nb = 1
 n = nb*nt
 
-t = int(1e5)
+t = int(1e3)
 out2 = np.array([[1e9, 1e9]])
 
 for i in range(t):
@@ -36,6 +39,8 @@ for i in range(t):
     out2 = out2[a[0]]
     print((i+1)/t)
 
+pickle.dump(out2, f)
+f.close()
 plt.plot(out2[:,0], out2[:,1],'ro')
 plt.show()
 
