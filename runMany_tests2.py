@@ -4,11 +4,11 @@ import os
 import pycuda.driver as cuda
 
 # problem = [32]
-problem = [31,32,33]
+problem = [31,32,33,35,36,37]
 # problem = [11,12,13,14,16]
 # problem = [4,7,1,2,3,5,6]
 #problem = [31, 32, 33, 35, 36, 37]
-alpha = [2.0]*len(problem)
+alpha = [1.5]*len(problem)
 for j in range(len(problem)):
     print('problem', problem[j])
 
