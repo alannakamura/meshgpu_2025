@@ -75,10 +75,11 @@ class MESH_Params:
                  personal_guide_array_size,
                  secondary_params=False,
                  initial_state=False,
-                 func_n = 11,
-                 gpu=False):
+                 restrictions_dim = 0,
+                 func_n = 11):
 
         self.objectives_dim = objectives_dim
+        self.restrictions_dim = restrictions_dim
         self.otimizations_type = otimizations_type
 
         self.max_iterations = max_iterations
@@ -123,6 +124,11 @@ class MESH_Params:
             cuda.mem_alloc(np.array(objectives_dim, dtype=np.int32).nbytes))
         cuda.memcpy_htod(self.objectives_dim_g,
                          np.array(self.objectives_dim, dtype=np.int32))
+
+        self.restrictions_dim_g = (
+            cuda.mem_alloc(np.array(restrictions_dim, dtype=np.int32).nbytes))
+        cuda.memcpy_htod(self.restrictions_dim_g,
+                         np.array(self.restrictions_dim, dtype=np.int32))
 
         self.otimizations_type_g = (
             cuda.mem_alloc(np.array(otimizations_type, dtype=np.int32).nbytes))
@@ -272,13 +278,13 @@ class MESH:
         if gpu:
             total = self.params.population_size * 2 + self.params.memory_size
 
-            self.position = (
-                cuda.mem_alloc(np.zeros(total * self.params.position_dim,
-                                        dtype=np.float64).nbytes))
-
-            self.fitness = (
-                cuda.mem_alloc(np.zeros(total * self.params.objectives_dim,
-                                        dtype=np.float64).nbytes))
+            # self.position = (
+            #     cuda.mem_alloc(np.zeros(total * self.params.position_dim,
+            #                             dtype=np.float64).nbytes))
+            #
+            # self.fitness = (
+            #     cuda.mem_alloc(np.zeros(total * self.params.objectives_dim,
+            #                             dtype=np.float64).nbytes))
 
             self.alpha_g = (
                 cuda.mem_alloc(np.array(self.alpha, dtype=np.float64).nbytes))
@@ -425,6 +431,15 @@ class MESH:
                 cuda.mem_alloc(np.zeros(total * self.params.objectives_dim, dtype=np.float64).nbytes))
             cuda.memcpy_htod(self.fitness_g,
                              np.zeros(total * self.params.objectives_dim, dtype=np.float64))
+
+            if self.params.restrictions_dim > 0:
+                self.restrictions_g = (
+                    cuda.mem_alloc(np.zeros(total * self.params.restrictions_dim, dtype=np.float64).nbytes))
+                cuda.memcpy_htod(self.restrictions_g,
+                                 np.zeros(total * self.params.restrictions_dim, dtype=np.float64))
+            else:
+                self.restrictions_g = (
+                    cuda.mem_alloc(np.zeros(1, dtype=np.float64).nbytes))
 
             self.seed_g = cuda.mem_alloc(np.zeros(1, dtype=np.float64).nbytes)
             cuda.memcpy_htod(self.seed_g, np.random.randint(0, int(1e9), dtype=np.int32))
@@ -1673,7 +1688,7 @@ class MESH:
 
                 function = self.mod.get_function("function1")
                 function(self.params.func_n_g, self.position_g, self.params.position_dim_g,
-                         self.fitness_g, self.alpha_g, self.params.population_size_g,
+                         self.fitness_g, self.restrictions_g, self.alpha_g, self.params.population_size_g,
                     block=(int(np.ceil(self.params.population_size/div)), 1, 1),
                     grid=(div, 1, 1))
                 cuda.Context.synchronize()
@@ -1803,7 +1818,7 @@ class MESH:
                                           self.position_g, self.params.position_dim_g,
                                           self.personal_best_position_g,
                                           self.params.personal_guide_array_size_g,
-                                          self.fitness_g, self.params.objectives_dim_g,
+                                          self.fitness_g, self.restrictions_g, self.params.objectives_dim_g,
                                           self.params.otimizations_type_g, self.xr_pool_g,
                                           self.params.DE_mutation_type_g, self.xr_list_g,
                                           self.weights_g, self.xst_g,
@@ -2215,7 +2230,8 @@ class MESH:
                     div = int(np.ceil(2*self.params.population_size / 1024))
                     function = self.mod.get_function("function2")
                     function(self.params.func_n_g, self.position_g, self.params.position_dim_g,
-                             self.fitness_g, self.alpha_g, self.params.population_size_g,
+                             self.fitness_g, self.restrictions_g, self.alpha_g,
+                             self.params.population_size_g,
                              block=(int(np.ceil(2*self.params.population_size / div)), 1, 1),
                              grid=(div, 1, 1))
                     cuda.Context.synchronize()
@@ -2489,7 +2505,7 @@ class MESH:
                     div = int(np.ceil(self.params.population_size / 1024))
                     function = self.mod.get_function("function1")
                     function(self.params.func_n_g, self.position_g, self.params.position_dim_g,
-                             self.fitness_g, self.alpha_g, self.params.population_size_g,
+                             self.fitness_g, self.restrictions_g, self.alpha_g, self.params.population_size_g,
                              block=(int(np.ceil(self.params.population_size / div)), 1, 1),
                              grid=(div, 1, 1))
                     cuda.Context.synchronize()
@@ -2652,7 +2668,7 @@ class MESH:
                         div = int(np.ceil(self.params.population_size / 1024))
                         function = self.mod.get_function("function1")
                         function(self.params.func_n_g, self.position_g, self.params.position_dim_g,
-                                 self.fitness_g, self.alpha_g, self.params.population_size_g,
+                                 self.fitness_g, self.restrictions_g, self.alpha_g, self.params.population_size_g,
                                  block=(int(np.ceil(self.params.population_size / div)), 1, 1),
                                  grid=(div, 1, 1))
                         cuda.Context.synchronize()
@@ -2736,7 +2752,7 @@ class MESH:
                         div = int(np.ceil(self.params.population_size / 1024))
                         function = self.mod.get_function("function1")
                         function(self.params.func_n_g, self.position_g, self.params.position_dim_g,
-                                 self.fitness_g, self.alpha_g, self.params.population_size_g,
+                                 self.fitness_g, self.restrictions_g, self.alpha_g, self.params.population_size_g,
                                  block=(int(np.ceil(self.params.population_size / div)), 1, 1),
                                  grid=(div, 1, 1))
                         cuda.Context.synchronize()

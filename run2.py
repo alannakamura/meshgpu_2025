@@ -85,21 +85,31 @@ for func_n in [int(problem)]:
         position_max_value = [1] * position_dim
         # position_min_value = [1e-6] * position_dim
         position_min_value = [0] * position_dim
-    if func_n in [14]:
+    elif func_n in [14]:
         position_max_value = [10] * position_dim
         position_min_value = [-10] * position_dim
         position_max_value[0] = 1
         position_min_value[0] = 0
-    if func_n in [15]:
+    elif func_n in [15]:
         position_max_value = [2**5-1] * position_dim
         position_min_value = [0] * position_dim
         position_max_value[0] = 2**30-1
-    if func_n == 21:
+    elif func_n == 21:
         position_max_value = [0] * position_dim
         position_min_value = [0] * position_dim
         for i in range(position_dim):
             position_max_value[i] = 2*(i+1)
             # position_max_value[i] = 1
+    else:
+        position_max_value = []
+        position_min_value = []
+
+    if func_n<31:
+        restrictions_dim = 0
+    elif func_n == 31:
+        restrictions_dim = 1
+    else:
+        restrictions_dim = 0
 
     # population_size = 100
     population_size = population
@@ -129,8 +139,7 @@ for func_n in [int(problem)]:
                              memory_update_type, global_best_attribution_type,
                              DE_mutation_type, Xr_pool_type, crowd_distance_type,
                              communication_probability, mutation_rate, personal_guide_array_size,
-                             func_n=func_n,
-                             gpu=True)
+                             restrictions_dim = restrictions_dim, func_n=func_n)
 
         start = dt.now()
 

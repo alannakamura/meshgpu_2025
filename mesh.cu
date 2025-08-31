@@ -664,9 +664,10 @@ __device__ double restricao2(double a, double b, double c, double d, double e)
     return a*pow(sin(b*pow(c, d)), e);
 }
 
-__device__ void mw1(double *position, int *position_dim, double *fitness, int i, double *alpha)
+__device__ void mw1(double *position, int *position_dim, double *fitness,
+double *restrictions, int i, double *alpha)
 {
-    double g=0, l, c, pi = 3.14159265358979323846;
+    double g=0, l, pi = 3.14159265358979323846;
 
     g = g1_mw(2, position_dim[0], position, i);
 
@@ -676,10 +677,14 @@ __device__ void mw1(double *position, int *position_dim, double *fitness, int i,
     fitness[i*2+1] =  g*(1-0.85*fitness[i*2+0]/g);
 
     l = sqrt(2.0)*fitness[i*2+1] - sqrt(2.0) * fitness[i*2+0];
-    c = fitness[i*2+1] + fitness[i*2+0] -1 - 0.5*pow(sin(2*pi*l), 8);
+//     c = fitness[i*2+1] + fitness[i*2+0] -1 - 0.5*pow(sin(2*pi*l), 8);
+//     viavel c<=0
+    restrictions[i*1+0] = fitness[i*2+1] + fitness[i*2+0] -1 - 0.5*pow(sin(2*pi*l), 8);
 
 //     printf("%d %lf %lf %lf\n", i, fitness[i*2], fitness[i*2+1], g);
-    if(c>0)
+
+//     if(c>0)
+    if(restrictions[i]>0)
     {
 //         printf("%d %lf %lf\n", i, c, g);
 //         printf("%d \n", i);
@@ -687,8 +692,8 @@ __device__ void mw1(double *position, int *position_dim, double *fitness, int i,
 //         fitness[i*2+1] += alpha[0]*c;
 //         fitness[i*2+0] = 1.0 + c;
 //         fitness[i*2+1] = 1.5 + c;
-        fitness[i*2+0] += alpha[0]*c;
-        fitness[i*2+1] += alpha[0]*c;
+        fitness[i*2+0] += alpha[0]*restrictions[i];
+        fitness[i*2+1] += alpha[0]*restrictions[i];
     }
 }
 
@@ -1306,7 +1311,7 @@ __device__ void wfg1(double *position, int *position_dim, double *fitness, int i
 }
 
 __device__ void function(int *func_n, double *position, int *position_dim,
- double *fitness, double *alpha, int population_size)
+ double *fitness, double *restrictions, double *alpha, int population_size)
 {
 //     int i = threadIdx.x;
     int i = blockIdx.x*blockDim.x+threadIdx.x;
@@ -1371,7 +1376,7 @@ __device__ void function(int *func_n, double *position, int *position_dim,
         }
         if(func_n[0] == 31)
         {
-            mw1(position, position_dim, fitness, i, alpha);
+            mw1(position, position_dim, fitness, restrictions, i, alpha);
         }
         if(func_n[0] == 32)
         {
@@ -1409,16 +1414,32 @@ __device__ void function(int *func_n, double *position, int *position_dim,
 }
 
 __global__ void function1(int *func_n, double *position, int *position_dim,
- double *fitness, double *alpha, int *population_size)
+ double *fitness, double *restrictions, double *alpha, int *population_size)
 {
-    function(func_n, position, position_dim, fitness, alpha, population_size[0]);
+    function(func_n, position, position_dim, fitness, restrictions, alpha, population_size[0]);
 }
 
+// __device__ void function1(int *func_n, double *position, int *position_dim,
+//  double *fitness, double *restrictions, double *alpha, int *population_size)
+// {
+//     function(func_n, position, position_dim, fitness, restrictions, alpha, population_size[0]);
+// }
+
 __global__ void function2(int *func_n, double *position, int *position_dim,
- double *fitness, double *alpha, int *population_size)
+ double *fitness, double *restrictions, double *alpha, int *population_size)
 {
-    function(func_n, position, position_dim, fitness, alpha, 2*population_size[0]);
+    function(func_n, position, position_dim, fitness, restrictions, alpha, 2*population_size[0]);
 }
+
+// __device__ calculate_restrictions(int *func_n, double *fitness, int dim, double *restrictions)
+// {
+//     if(func_n[0]==31)
+//     {
+//         l = sqrt(2.0)*fitness[i*2+1] - sqrt(2.0) * fitness[i*2+0];
+// //     viavel c<=0
+//         restrictions[0] = fitness[i*2+1] + fitness[i*2+0] -1 - 0.5*pow(sin(2*pi*l), 8);
+//     }
+// }
 
 __device__ int a_dominate_b(double *fitness1, double *fitness2, int dim, int *maximize)
 {
@@ -1428,19 +1449,13 @@ __device__ int a_dominate_b(double *fitness1, double *fitness2, int dim, int *ma
     {
         if(maximize[i] == 0)
         {
-//             printf("fitness1[0]=%lf, fitness1[1]=%lf, fitness2[0]=%lf, fitness2[1]=%lf\n",
-//              fitness1[0], fitness1[1],fitness2[0], fitness2[1]);
-//             if (self.fitness[i]-other.fitness[i])>1e-6
             if(fitness1[i] > fitness2[i])
-//             if((fitness1[i] - fitness2[i])>1e-6)
             {
                 return 0;
             }
             else
             {
-//                 (self.fitness[i]-other.fitness[i])<-1e-6:
                 if(fitness1[i] < fitness2[i])
-//                 if((fitness1[i] - fitness2[i])<-1e-6)
                 {
                     temp = 1;
                 }
@@ -1449,14 +1464,12 @@ __device__ int a_dominate_b(double *fitness1, double *fitness2, int dim, int *ma
         else
         {
             if(fitness1[i] < fitness2[i])
-//             if((fitness1[i] - fitness2[i])<-1e-6)
             {
                 return 0;
             }
             else
             {
                 if(fitness1[i] > fitness2[i])
-//                 if((fitness1[i] - fitness2[i])>1e-6)
                 {
                     temp = 1;
                 }
@@ -2941,10 +2954,11 @@ int *personal_guide_array_size, int *personal_best_tam, int *maximize)
 
 __global__ void differential_mutation(int *func_n, int *xr_pool_type, int *tam_pop, int *tam_mem,
  double *position, int *tam_pos, double *personal_best_p, int *personal_guide_array_size,
- double *fitness, int *tam_fit, int *maximize, int *xr_pool, int *DE_mutation_type, int *xr_list,
- double *weights, double *xst, double *pos_min, double *pos_max, int *secondary_params,
- double *xst_fitness, int *xst_dominate, double *personal_best_f, double *personal_best_v,
- int *personal_best_tam, int *update_from_differential_mutation, int *seed, double *alpha)
+ double *fitness, double *restrictions, int *tam_fit, int *maximize, int *xr_pool,
+ int *DE_mutation_type, int *xr_list, double *weights, double *xst, double *pos_min,
+ double *pos_max, int *secondary_params, double *xst_fitness, int *xst_dominate,
+ double *personal_best_f, double *personal_best_v, int *personal_best_tam,
+ int *update_from_differential_mutation, int *seed, double *alpha)
 {
     int i = blockIdx.x*blockDim.x+threadIdx.x;
     int j, tamPersonal, temp1, temp2, k=0, pool_tam=0;
@@ -3083,7 +3097,7 @@ __global__ void differential_mutation(int *func_n, int *xr_pool_type, int *tam_p
         }
         if(func_n[0] == 31)
         {
-            mw1(xst, tam_pos, xst_fitness, i, alpha);
+            mw1(xst, tam_pos, xst_fitness, restrictions, i, alpha);
         }
         if(func_n[0] == 32)
         {
