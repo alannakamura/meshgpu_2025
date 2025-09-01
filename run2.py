@@ -48,7 +48,7 @@ if len(sys.argv) > 1:
 else:
     problem = 36
     max_num_iters = 1
-    population = 256
+    population = 128
     alpha = -1.0
     pos_dim = 3
 
@@ -106,8 +106,10 @@ for func_n in [int(problem)]:
 
     if func_n<31:
         restrictions_dim = 0
-    elif func_n == 31:
+    elif func_n in [31, 32]:
         restrictions_dim = 1
+    elif func_n in [33]:
+        restrictions_dim = 2
     else:
         restrictions_dim = 0
 

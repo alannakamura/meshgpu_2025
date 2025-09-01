@@ -1,5 +1,6 @@
 #include <curand.h>
 #include <curand_kernel.h>
+#include <math.h>
 
 typedef struct{
     int *objectives_dim;
@@ -667,24 +668,24 @@ __device__ double restricao2(double a, double b, double c, double d, double e)
 __device__ void mw1(double *position, int *position_dim, double *fitness,
 double *restrictions, int i, double *alpha)
 {
-    double g=0, l, pi = 3.14159265358979323846;
+    double g=0, l, pi = 3.14159265358979323846, c;
 
     g = g1_mw(2, position_dim[0], position, i);
 
 //     printf("%d p0=%lf p1=%lf %lf\n", i,position[i*10], fitness[i*10+1], g);
 
-    fitness[i*2+0] =  position[i*position_dim[0]+0];
-    fitness[i*2+1] =  g*(1-0.85*fitness[i*2+0]/g);
+    fitness[i*3+0] =  position[i*position_dim[0]+0];
+    fitness[i*3+1] =  g*(1-0.85*fitness[i*3+0]/g);
 
-    l = sqrt(2.0)*fitness[i*2+1] - sqrt(2.0) * fitness[i*2+0];
+    l = sqrt(2.0)*fitness[i*3+1] - sqrt(2.0) * fitness[i*3+0];
 //     c = fitness[i*2+1] + fitness[i*2+0] -1 - 0.5*pow(sin(2*pi*l), 8);
 //     viavel c<=0
-    restrictions[i*1+0] = fitness[i*2+1] + fitness[i*2+0] -1 - 0.5*pow(sin(2*pi*l), 8);
+    c = fitness[i*3+1] + fitness[i*3+0] -1 - 0.5*pow(sin(2*pi*l), 8);
 
 //     printf("%d %lf %lf %lf\n", i, fitness[i*2], fitness[i*2+1], g);
 
 //     if(c>0)
-    if(restrictions[i]>0)
+    if(c>0)
     {
 //         printf("%d %lf %lf\n", i, c, g);
 //         printf("%d \n", i);
@@ -692,64 +693,45 @@ double *restrictions, int i, double *alpha)
 //         fitness[i*2+1] += alpha[0]*c;
 //         fitness[i*2+0] = 1.0 + c;
 //         fitness[i*2+1] = 1.5 + c;
-        fitness[i*2+0] += alpha[0]*restrictions[i];
-        fitness[i*2+1] += alpha[0]*restrictions[i];
+        fitness[i*3+0] += alpha[0]*c;
+        fitness[i*3+1] += alpha[0]*c;
     }
 }
 
 __device__ void mw2(double *position, int *position_dim, double *fitness, int i, double *alpha)
 {
-    double g=0, l, c, pi = 3.141592;
+    double g=0, l, pi = 3.141592;
 
     g = g2_mw(2, position_dim[0], position, i);
 
-    fitness[i*2+0] =  position[i*position_dim[0]+0];
-    fitness[i*2+1] =  g*(1-fitness[i*2+0]/g);
+    fitness[i*3+0] =  position[i*position_dim[0]+0];
+    fitness[i*3+1] =  g*(1-fitness[i*3+0]/g);
 
-    l = sqrt(2.0)*fitness[i*2+1] - sqrt(2.0) * fitness[i*2+0];
-    c = fitness[i*2+1] + fitness[i*2+0] -1 - 0.5*pow(sin(3*pi*l), 8);
+    l = sqrt(2.0)*fitness[i*3+1] - sqrt(2.0) * fitness[i*3+0];
+//     c = fitness[i*3+1] + fitness[i*3+0] -1 - 0.5*pow(sin(3*pi*l), 8);
+    fitness[i*3+2] = fitness[i*3+1] + fitness[i*3+0] -1 - 0.5*pow(sin(3*pi*l), 8);
 
-    if(c>0)
-    {
-//         fitness[i*2+0] = 1.0 + c;
-//         fitness[i*2+1] = 1.5 + c;
-        fitness[i*2+0] += alpha[0]*c;
-        fitness[i*2+1] += alpha[0]*c;
-    }
+//     if(c>0)
+//     {
+// //         fitness[i*2+0] = 1.0 + c;
+// //         fitness[i*2+1] = 1.5 + c;
+//         fitness[i*3+0] += alpha[0]*c;
+//         fitness[i*3+1] += alpha[0]*c;
+//     }
 }
 
 __device__ void mw3(double *position, int *position_dim, double *fitness, int i, double *alpha)
 {
-    double g=0, l, c[2], pi = 3.141592;
+    double g=0, l;
 
     g = g3_mw(2, position_dim[0], position, i);
 
-    fitness[i*2+0] =  position[i*position_dim[0]+0];
-    fitness[i*2+1] =  g*(1-fitness[i*2+0]/g);
+    fitness[i*4+0] =  position[i*position_dim[0]+0];
+    fitness[i*4+1] =  g*(1-fitness[i*4+0]/g);
 
-    l = sqrt(2.0)*fitness[i*2+1] - sqrt(2.0) * fitness[i*2+0];
-    c[0] = fitness[i*2+1] + fitness[i*2+0] -1.05 - 0.45*pow(sin(0.75*pi*l), 6);
-    c[1] = 0.85 - fitness[i*2+1] - fitness[i*2+0] + 0.3*pow(sin(0.75*pi*l), 2);
-
-//     if(c[0] > 0 || c[1] > 0)
-//     {
-//         fitness[i*2+0] = 1.0;
-//         fitness[i*2+1] = 1.5;
-//     }
-    if(c[0]>0)
-    {
-        fitness[i*2+0] += alpha[0]*c[0];
-        fitness[i*2+1] += alpha[0]*c[0];
-//         fitness[i*2+0] += c[0];
-//         fitness[i*2+1] += c[0];
-    }
-    if(c[1]>0)
-    {
-        fitness[i*2+0] += alpha[0]*c[1];
-        fitness[i*2+1] += alpha[0]*c[1];
-//         fitness[i*2+0] += c[1];
-//         fitness[i*2+1] += c[1];
-    }
+    l = sqrt(2.0)*fitness[i*4+1] - sqrt(2.0) * fitness[i*4+0];
+    fitness[i*4+2] = fitness[i*4+1] + fitness[i*4+0] -1.05 - 0.45*pow(sin(0.75*M_PI*l), 6);
+    fitness[i*4+3] = 0.85 - fitness[i*4+1] - fitness[i*4+0] + 0.3*pow(sin(0.75*M_PI*l), 2);
 }
 
 
@@ -1455,44 +1437,170 @@ __global__ void function2(int *func_n, double *position, int *position_dim,
 //     }
 // }
 
-__device__ int a_dominate_b(double *fitness1, double *fitness2, int dim, int *maximize)
+__device__ int a_dominate_b(double *fitness1, double *fitness2, int *dim, int *maximize)
 {
-    int i=0, temp=0;
+    int obj_dim = dim[2];
+    int total_dim = dim[0];
 
-    while(i<dim)
-    {
-        if(maximize[i] == 0)
-        {
-            if(fitness1[i] > fitness2[i])
-            {
-                return 0;
-            }
-            else
-            {
-                if(fitness1[i] < fitness2[i])
-                {
-                    temp = 1;
-                }
-            }
+    int inviavel1 = 0, inviavel2 = 0;
+    double violacao_total1 = 0.0, violacao_total2 = 0.0;
+
+    // Verifica restrições: positiva → inviável
+    for (int j = obj_dim; j < total_dim; j++) {
+        if (fitness1[j] > 0.0) {
+            inviavel1 = 1;
+            break;
         }
-        else
-        {
-            if(fitness1[i] < fitness2[i])
-            {
-                return 0;
-            }
-            else
-            {
-                if(fitness1[i] > fitness2[i])
-                {
-                    temp = 1;
-                }
-            }
-        }
-        i++;
     }
-    return temp;
+
+    for (int j = obj_dim; j < total_dim; j++) {
+        if (fitness2[j] > 0.0) {
+            inviavel2 = 1;
+            break;
+        }
+    }
+
+    // Caso 1: fitness1 inviável, fitness2 viável → fitness2 domina
+    if (inviavel1 == 1 && inviavel2 == 0) return 0;
+
+    // Caso 2: fitness1 viável, fitness2 inviável → fitness1 domina
+    if (inviavel1 == 0 && inviavel2 == 1) return 1;
+
+    // Caso 3: ambos inviáveis → compara soma das violações
+    if (inviavel1 == 1 && inviavel2 == 1) {
+        for (int j = obj_dim; j < total_dim; j++) {
+            if (fitness1[j] > 0.0) violacao_total1 += fitness1[j];
+            if (fitness2[j] > 0.0) violacao_total2 += fitness2[j];
+        }
+
+        return (violacao_total1 < violacao_total2) ? 1 : 0;
+    }
+
+    // Caso 4: ambos viáveis → dominância pareto
+    int domina = 0;
+    for (int i = 0; i < obj_dim; i++) {
+        if (maximize[i] == 0) {
+            if (fitness1[i] > fitness2[i]) return 0;
+            if (fitness1[i] < fitness2[i]) domina = 1;
+        } else {
+            if (fitness1[i] < fitness2[i]) return 0;
+            if (fitness1[i] > fitness2[i]) domina = 1;
+        }
+    }
+
+    return domina;
 }
+
+
+// __device__ int a_dominate_b(double *fitness1, double *fitness2, int *dim, int *maximize)
+// {
+//     int i=0, temp=0, j, inviavel1 = 0, inviavel2 = 0;
+//     double violacao_total1 = 0.0, violacao_total2 = 0.0;
+//
+//     // inviavel se c fopr positivo
+// //     self.objectives_dim = np.array([objectives_dim+restrictions_dim, restrictions_dim, objectives_dim],
+// //                                        dtype=np.int32)
+//     for(j=dim[2]; j < dim[0] ; j++)
+//     {
+//         if(fitness1[j] > 0)
+//         {
+//             inviavel1 = 1;
+//             break;
+//         }
+//     }
+//
+//     for(j=dim[2]; j < dim[0] ; j++)
+//     {
+//         if(fitness2[j] > 0)
+//         {
+//             inviavel2 = 1;
+//             break;
+//         }
+//     }
+//
+//
+//
+//     if(inviavel1 == 1 && inviavel2 ==0)
+//     {
+//         return 0;
+//     }
+//     if(inviavel1 == 0 && inviavel2 ==1)
+//     {
+// //         printf("%lf %lf %lf %lf %lf %lf %d %d\n", fitness1[0], fitness1[1], fitness1[2], fitness2[0], fitness2[1],
+// //     fitness2[2], inviavel1, inviavel2);
+//         return 1;
+//     }
+//     if(inviavel1 == 1 && inviavel2 ==1)
+//     {
+//         for(j=dim[2]; j < dim[0] ; j++)
+//         {
+//             if(fitness1[j]>0 && fitness2[j]>0)
+//             {
+//
+//             }
+//             if(fitness1[j]>0)
+//             {
+//                 violacao_total1 += fitness1[j];
+//             }
+//             if(fitness2[j]>0)
+//             {
+//                 violacao_total2 += fitness2[j];
+//             }
+//             if(fitness2[2]> 0 && fitness2[3]>0)
+//             {
+// //                 printf("%d %d %d %lf %lf %lf %lf %lf %lf %lf %lf %d %d %lf %lf\n",
+// //             j, dim[2], dim[0],
+// //             fitness1[0], fitness1[1], fitness1[2], fitness1[3],
+// //             fitness2[0], fitness2[1], fitness2[2], fitness2[3],
+// //             inviavel1, inviavel2, violacao_total1, violacao_total2);
+//             }
+//         }
+//
+//         if(violacao_total1 < violacao_total2)
+//         {
+//             return 1;
+//         }
+//         else
+//         {
+//             return 0;
+//         }
+//     }
+//
+//     while(i<dim[2])
+//     {
+//         if(maximize[i] == 0)
+//         {
+//             if(fitness1[i] > fitness2[i])
+//             {
+//                 return 0;
+//             }
+//             else
+//             {
+//                 if(fitness1[i] < fitness2[i])
+//                 {
+//                     temp = 1;
+//                 }
+//             }
+//         }
+//         else
+//         {
+//             if(fitness1[i] < fitness2[i])
+//             {
+//                 return 0;
+//             }
+//             else
+//             {
+//                 if(fitness1[i] > fitness2[i])
+//                 {
+//                     temp = 1;
+//                 }
+//             }
+//         }
+//         i++;
+//     }
+//     return temp;
+// }
+
 
 __global__ void fast_nondominated_sort(double *fitness, int *dim_fitness, int *domination_counter,
 int *population_size, int *minimization)
@@ -1508,7 +1616,11 @@ int *population_size, int *minimization)
     if(l<population_size[0] && c<population_size[0])
     {
         domination_counter[l*population_size[0]+c] =
-        a_dominate_b(fitness+l*dim_fitness[0], fitness+c*dim_fitness[0], dim_fitness[0], minimization);
+        a_dominate_b(fitness+l*dim_fitness[0], fitness+c*dim_fitness[0], dim_fitness, minimization);
+//         if(l==0 && c==0)
+//         {
+//             printf("dim_fit = %d\n", dim_fitness[0]);
+//         }
     }
 }
 
@@ -1526,7 +1638,7 @@ int *population_size, int *minimization, int *colunas2)
     if(l<2*population_size[0] && c<2*population_size[0])
     {
         domination_counter[l*2*population_size[0]+c] =
-        a_dominate_b(fitness+l*dim_fitness[0], fitness+c*dim_fitness[0], dim_fitness[0], minimization);
+        a_dominate_b(fitness+l*dim_fitness[0], fitness+c*dim_fitness[0], dim_fitness, minimization);
     }
 }
 
@@ -1671,7 +1783,7 @@ int *colunas, int *minimization, int *dim_fit, int *front0_mem, int *tam_front0_
 //         domination_counter[l*tam_front0_mem[0]+c] = a_dominate_b(fitness+l2*colunas2[0],
 //         fitness+c2*colunas2[0], dim[0], minimization);
         domination_counter[l*tam_front0_mem[0]+c] = a_dominate_b(fitness+l2*dim_fit[0],
-        fitness+c2*dim_fit[0], dim[0], minimization);
+        fitness+c2*dim_fit[0], dim, minimization);
     }
 }
 
@@ -1713,19 +1825,19 @@ int *front0_mem, int *tam_front0, int *front0)
     front0[j] = -1;
 }
 
-__global__ void fast_nondominated_sort7(double *fitness, int *dim, int *domination_counter,
-int *colunas, int *minimization, int *colunas2)
-{
-    int l = blockIdx.x*blockDim.x+threadIdx.x;
-    int c = blockIdx.y*blockDim.y+threadIdx.y;
-    int tam = gridDim.y*blockDim.y;
-
-    if(l<colunas[0] && c<colunas[0])
-    {
-        domination_counter[l*tam+c] = 0;
-        domination_counter[l*tam+c] = a_dominate_b(fitness+l*colunas2[0], fitness+c*colunas2[0], dim[0], minimization);
-    }
-}
+// __global__ void fast_nondominated_sort7(double *fitness, int *dim, int *domination_counter,
+// int *colunas, int *minimization, int *colunas2)
+// {
+//     int l = blockIdx.x*blockDim.x+threadIdx.x;
+//     int c = blockIdx.y*blockDim.y+threadIdx.y;
+//     int tam = gridDim.y*blockDim.y;
+//
+//     if(l<colunas[0] && c<colunas[0])
+//     {
+//         domination_counter[l*tam+c] = 0;
+//         domination_counter[l*tam+c] = a_dominate_b(fitness+l*colunas2[0], fitness+c*colunas2[0], dim[0], minimization);
+//     }
+// }
 
 __global__ void fast_nondominated_sort3_teste(int *domination_counter, int *colunas, int *population_size,
  int *fronts, int *tam, int *rank, double *fitness)
@@ -2380,7 +2492,7 @@ int *tam_obj, int *tam_pos, double *position, double *fitness, int *personal_gui
     }
     if(different>0)
     {
-        if(a_dominate_b(fitness+(i*tam_obj[0]), personal_best_f+(i*tam2), tam_obj[0], maximize))
+        if(a_dominate_b(fitness+(i*tam_obj[0]), personal_best_f+(i*tam2), tam_obj, maximize))
         {
     //         printf("sim %d %d %d %lf %lf %lf %lf\n", i, i*tam_obj[0], i*tam2, fitness[i*2], fitness[i*2+1],
     //                     personal_best_f[i*tam2], personal_best_f[i*tam2+1]);
@@ -2402,7 +2514,7 @@ int *tam_obj, int *tam_pos, double *position, double *fitness, int *personal_gui
         }
         else
         {
-            if(a_dominate_b(personal_best_f+(i*tam2), fitness+(i*tam_obj[0]), tam_obj[0], maximize))
+            if(a_dominate_b(personal_best_f+(i*tam2), fitness+(i*tam_obj[0]), tam_obj, maximize))
             {
                 printf("nao sim %d %lf %lf %lf %lf\n", i, fitness[i*2], fitness[i*2+1],
                             personal_best_f[i*tam2], personal_best_f[i*tam2+1]);
@@ -2495,12 +2607,12 @@ int *tam_obj, int *tam_pos, double *position, double *fitness, int *personal_gui
 //                 printf("i=%d exist=%d diff=%d\n",i,exist, different);
 //             }
             if(a_dominate_b(personal_best_f+(i*tam2+k*tam_obj[0]), fitness+(i*tam_obj[0]),
-            tam_obj[0], maximize) == 0)
+            tam_obj, maximize) == 0)
             {
                 dominated--;
             }
             if(a_dominate_b(fitness+(i*tam_obj[0]), personal_best_f+(i*tam2+k*tam_obj[0]),
-            tam_obj[0], maximize))
+            tam_obj, maximize))
             {
                 for(j=0;j<tam_pos[0];j++)
                 {
@@ -2565,12 +2677,12 @@ int *tam_obj, int *tam_pos, double *position, double *fitness, int *personal_gui
             {
                 dominated++;
                 if(a_dominate_b(personal_best_f+(i*tam2+k*tam_obj[0]), fitness+(i*tam_obj[0]),
-                tam_obj[0], maximize) == 0)
+                tam_obj, maximize) == 0)
                 {
                     dominated--;
                 }
                 if(a_dominate_b(fitness+(i*tam_obj[0]), personal_best_f+(i*tam2+k*tam_obj[0]),
-                tam_obj[0], maximize))
+                tam_obj, maximize))
                 {
                     for(j=0;j<tam_pos[0];j++)
                     {
@@ -2718,12 +2830,12 @@ int *tam_obj, int *tam_pos, double *position, double *fitness, int *personal_gui
 //                 printf("i=%d k=%d\n",i,k);
 //             }
             if(a_dominate_b(personal_best_f+(i*tam2+k*tam_obj[0]), fitness+(i*tam_obj[0]),
-            tam_obj[0], maximize) == 0)
+            tam_obj, maximize) == 0)
             {
                 dominated--;
             }
             if(a_dominate_b(fitness+(i*tam_obj[0]), personal_best_f+(i*tam2+k*tam_obj[0]),
-            tam_obj[0], maximize))
+            tam_obj, maximize))
             {
                 for(j=0;j<tam_pos[0];j++)
                 {
@@ -2824,7 +2936,7 @@ int *personal_guide_array_size, int *maximize)
 
             // particula da lista nao domina a partocula atual, dominated =0
             if(a_dominate_b(personal_best_f+(i*tam2+k*tam_obj[0]), fitness+(i*tam_obj[0]),
-            tam_obj[0], maximize) == 0)
+            tam_obj, maximize) == 0)
             {
                 dominated--;
             }
@@ -2834,7 +2946,7 @@ int *personal_guide_array_size, int *maximize)
             // e um indicador de inclusao
             // se ela nao dominar nao afz nada, include=0
             if(a_dominate_b(fitness+(i*tam_obj[0]), personal_best_f+(i*tam2+k*tam_obj[0]),
-            tam_obj[0], maximize))
+            tam_obj, maximize))
             {
                 for(j=0;j<tam_pos[0];j++)
                 {
@@ -2945,7 +3057,7 @@ int *personal_guide_array_size, int *personal_best_tam, int *maximize)
         if(personal_best_p[i*tam1+j*tam_pos[0]]!=1e10)
         {
             temp = a_dominate_b(fitness+(i*tam_obj[0]),
-            personal_best_f+(i*tam2+j*tam_obj[0]), tam_obj[0], maximize);
+            personal_best_f+(i*tam2+j*tam_obj[0]), tam_obj, maximize);
 //             printf("i = %d %d %d %d\n, ", i, temp, i*tam_obj[0], i*tam2+j*tam_obj[0]);
             if(temp==1)
             {
@@ -3011,7 +3123,7 @@ __global__ void differential_mutation(int *func_n, int *xr_pool_type, int *tam_p
                 if(!(temp1 == 1) || !(temp2 == 1))
                 {
                     if(a_dominate_b(fitness+i*tam_fit[0], fitness+(2*tam_pop[0]+j)*tam_fit[0],
-                     tam_fit[0], maximize) == 0)
+                     tam_fit, maximize) == 0)
                     {
                         xr_pool[i*(2*tam_pop[0]+tam_mem[0])+k] = j;
                         pool_tam+=1;
@@ -3147,7 +3259,7 @@ __global__ void differential_mutation(int *func_n, int *xr_pool_type, int *tam_p
         }
 
     //     verificar se xst domina a particula i
-        if(a_dominate_b(xst_fitness+(i*tam_fit[0]), fitness+(i*tam_fit[0]), tam_fit[0], maximize))
+        if(a_dominate_b(xst_fitness+(i*tam_fit[0]), fitness+(i*tam_fit[0]), tam_fit, maximize))
         {
             xst_dominate[i] = 1;
             for(j=0;j<tam_pos[0];j++)
