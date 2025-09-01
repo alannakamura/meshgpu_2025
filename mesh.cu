@@ -711,10 +711,10 @@ __device__ void mw2(double *position, int *position_dim, double *fitness, int i,
 
     if(c>0)
     {
-        fitness[i*2+0] = 1.0 + c;
-        fitness[i*2+1] = 1.5 + c;
-//         fitness[i*2+0] += alpha[0]*c;
-//         fitness[i*2+1] += alpha[0]*c;
+//         fitness[i*2+0] = 1.0 + c;
+//         fitness[i*2+1] = 1.5 + c;
+        fitness[i*2+0] += alpha[0]*c;
+        fitness[i*2+1] += alpha[0]*c;
     }
 }
 
@@ -738,17 +738,17 @@ __device__ void mw3(double *position, int *position_dim, double *fitness, int i,
 //     }
     if(c[0]>0)
     {
-//         fitness[i*2+0] += alpha[0]*c[0];
-//         fitness[i*2+1] += alpha[0]*c[0];
-        fitness[i*2+0] += c[0];
-        fitness[i*2+1] += c[0];
+        fitness[i*2+0] += alpha[0]*c[0];
+        fitness[i*2+1] += alpha[0]*c[0];
+//         fitness[i*2+0] += c[0];
+//         fitness[i*2+1] += c[0];
     }
     if(c[1]>0)
     {
-//         fitness[i*2+0] += alpha[0]*c[1];
-//         fitness[i*2+1] += alpha[0]*c[1];
-        fitness[i*2+0] += c[1];
-        fitness[i*2+1] += c[1];
+        fitness[i*2+0] += alpha[0]*c[1];
+        fitness[i*2+1] += alpha[0]*c[1];
+//         fitness[i*2+0] += c[1];
+//         fitness[i*2+1] += c[1];
     }
 }
 
@@ -815,24 +815,24 @@ __device__ void mw5(double *position, int *position_dim, double *fitness, int i,
 
     if(c[0]>0)
     {
-//         fitness[i*2+0] += alpha[0]*c[0];
-//         fitness[i*2+1] += alpha[0]*c[0];
-        fitness[i*2+0] += c[0];
-        fitness[i*2+1] += c[0];
+        fitness[i*2+0] += alpha[0]*c[0];
+        fitness[i*2+1] += alpha[0]*c[0];
+//         fitness[i*2+0] += c[0];
+//         fitness[i*2+1] += c[0];
     }
     if(c[1]>0)
     {
-//         fitness[i*2+0] += alpha[0]*c[1];
-//         fitness[i*2+1] += alpha[0]*c[1];
-        fitness[i*2+0] += c[1];
-        fitness[i*2+1] += c[1];
+        fitness[i*2+0] += alpha[0]*c[1];
+        fitness[i*2+1] += alpha[0]*c[1];
+//         fitness[i*2+0] += c[1];
+//         fitness[i*2+1] += c[1];
     }
     if(c[2]>0)
     {
-//         fitness[i*2+0] += alpha[0]*c[2];
-//         fitness[i*2+1] += alpha[0]*c[2];
-        fitness[i*2+0] += c[2];
-        fitness[i*2+1] += c[2];
+        fitness[i*2+0] += alpha[0]*c[2];
+        fitness[i*2+1] += alpha[0]*c[2];
+//         fitness[i*2+0] += c[2];
+//         fitness[i*2+1] += c[2];
     }
 }
 
@@ -848,7 +848,14 @@ __device__ void mw6(double *position, int *position_dim, double *fitness, int i,
 //     l = fitness[i*2+1]/fitness[i*2+0];
 //     l = powf(l, 4);
 //     l = atanf(l);
+
     l = atan(fitness[i*2+1]/fitness[i*2+0]);
+
+//     if(fitness[i*2+0] == 0)
+//     {
+//         printf("i=%d l=%lf\n",i,l);
+//     }
+
     l = pow(l, 4);
     l = l * 6;
     l = cos(l);
@@ -864,16 +871,21 @@ __device__ void mw6(double *position, int *position_dim, double *fitness, int i,
     c = c + temp;
     c = c - 1.0;
 
+//     if(fitness[i*2+0] == 0)
+//     {
+//         printf("i=%d l=%lf c=%lf\n",i,l,c);
+//     }
+
+//     if(c>0)
+//     {
+//         fitness[i*2+0] = 1.5 + c;
+//         fitness[i*2+1] = 2.0 + c;
+//     }
     if(c>0)
     {
-        fitness[i*2+0] = 1.5 + c;
-        fitness[i*2+1] = 2.0 + c;
+        fitness[i*2+0] += alpha[0]*c;
+        fitness[i*2+1] += alpha[0]*c;
     }
-//      if(c>0)
-//     {
-//         fitness[i*2+0] += alpha[0]*c;
-//         fitness[i*2+1] += alpha[0]*c;
-//     }
 }
 
 __device__ void mw7(double *position, int *position_dim, double *fitness, int i, double *alpha)
@@ -908,15 +920,17 @@ __device__ void mw7(double *position, int *position_dim, double *fitness, int i,
 
     if(c[0]>0)
     {
-//         fitness[i*2+0] += alpha[0]*c[0];
-//         fitness[i*2+1] += alpha[0]*c[0];
-        fitness[i*2+0] += c[0];
-        fitness[i*2+1] += c[0];
+        fitness[i*2+0] += alpha[0]*c[0];
+        fitness[i*2+1] += alpha[0]*c[0];
+//         fitness[i*2+0] += c[0];
+//         fitness[i*2+1] += c[0];
     }
     if(c[1]>0)
     {
-        fitness[i*2+0] += c[1];
-        fitness[i*2+1] += c[1];
+        fitness[i*2+0] += alpha[0]*c[1];
+        fitness[i*2+1] += alpha[0]*c[1];
+//         fitness[i*2+0] += c[1];
+//         fitness[i*2+1] += c[1];
     }
 }
 

@@ -46,11 +46,11 @@ if len(sys.argv) > 1:
     pos_dim = int(sys.argv[5])
     print('\npos_dim', pos_dim)
 else:
-    problem = 11
-    max_num_iters = 100
-    population = 128
+    problem = 36
+    max_num_iters = 1
+    population = 256
     alpha = -1.0
-    pos_dim = 80
+    pos_dim = 3
 
     f = open('results2.pkl', 'wb')
     results = {'count': -1, 'cpu': [], 'gpu': []}
